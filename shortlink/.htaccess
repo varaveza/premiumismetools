@@ -1,0 +1,22 @@
+RewriteEngine On
+
+# Handle shortlink redirects (format: domain.com/randomstring)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9]{6})$ redirect.php?slug=$1 [L,QSA]
+
+# Handle stats pages (format: domain.com/randomstring/stats)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9]{6})/stats$ stats.php?slug=$1 [L,QSA]
+
+# Prevent direct access to JSON file
+<Files "shortlinks.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"

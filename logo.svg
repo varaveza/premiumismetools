@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6B46C1">
+        <animate 
+          attributeName="offset"
+          values="0;1;0"
+          dur="2s"
+          repeatCount="indefinite" />
+      </stop>
+      <stop offset="50%" stop-color="#A855F7">
+        <animate 
+          attributeName="offset"
+          values="0.5;1.5;0.5"
+          dur="2s"
+          repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" stop-color="#6B46C1">
+        <animate 
+          attributeName="offset"
+          values="1;2;1"
+          dur="2s"
+          repeatCount="indefinite" />
+      </stop>
+    </linearGradient>
+  </defs>
+  
+  <text 
+    x="50%" 
+    y="50%" 
+    text-anchor="middle" 
+    dominant-baseline="middle"
+    font-family="Satoshi, Arial, sans-serif"
+    font-size="65"
+    font-weight="bold"
+    font-style="italic"
+    fill="url(#gradient)">
+    Premiumisme Tools
+  </text>
+</svg>

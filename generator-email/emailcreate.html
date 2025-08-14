@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Generator - Buat Email</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --very-peri: #5B5C9A; --dark-peri: #3E3F6A; --darker-peri: #2A2B4F; --darkest-peri: #1F2030;
+            --accent: #7A6EB7; --light-peri: #898AC8; --text-light: #E8E8F5;
+            --shadow-color: rgba(0, 0, 0, 0.3); --highlight-color: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(42, 43, 79, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent-glass-bg: rgba(154, 155, 217, 0.15); --accent-border: rgba(139, 126, 200, 0.7);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--darkest-peri) 0%, var(--darker-peri) 50%, var(--dark-peri) 100%);
+            min-height: 100vh; color: var(--text-light); overflow-x: hidden;
+            display: flex; align-items: center; justify-content: center; padding: 10px;
+        }
+        .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .shape {
+            position: absolute; background: var(--accent-glass-bg); border-radius: 50%;
+            animation: float 10s ease-in-out infinite alternate; filter: blur(8px);
+        }
+        .shape:nth-child(1) { width: 150px; height: 150px; top: 10%; left: 10%; animation-duration: 12s; }
+        .shape:nth-child(2) { width: 100px; height: 100px; top: 30%; right: 15%; animation-duration: 8s; animation-delay: -2s; }
+        .shape:nth-child(3) { width: 120px; height: 120px; bottom: 15%; left: 20%; animation-duration: 10s; animation-delay: -4s; }
+        @keyframes float {
+            0% { transform: translateY(0px) translateX(0px); }
+            100% { transform: translateY(-30px) translateX(20px); }
+        }
+        .container-main {
+            max-width: 900px; width: 100%; padding: 10px 25px 20px 25px;
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-radius: 25px; border: 1px solid var(--glass-border);
+            box-shadow: 0 15px 35px var(--shadow-color);
+            animation: fadeInScaleUp 0.8s ease-out forwards; z-index: 1;
+        }
+        @keyframes fadeInScaleUp { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .form-input {
+            background-color: var(--accent-glass-bg) !important;
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text-light) !important;
+            border-radius: 0.75rem !important;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-input:focus {
+            box-shadow: 0 0 0 2px var(--accent) !important;
+            border-color: var(--accent-border) !important;
+            outline: none;
+        }
+        .form-input::placeholder { color: rgba(232, 232, 245, 0.5); }
+        .btn {
+            padding: 12px 24px; border-radius: 12px; font-weight: bold; text-align: center;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; overflow: hidden; cursor: pointer; border: 1px solid transparent;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .btn-primary { background-color: var(--accent); border-color: var(--accent-border); color: var(--text-light); }
+        .btn-primary:hover { background-color: var(--light-peri); }
+        .btn-secondary { background-color: var(--dark-peri); border-color: var(--glass-border); color: var(--text-light); }
+        .btn-secondary:hover { background-color: var(--very-peri); }
+        .btn:disabled {
+            background-color: var(--darker-peri); color: rgba(232, 232, 245, 0.4);
+            cursor: not-allowed; transform: none; box-shadow: none;
+        }
+        input[type="radio"] {
+            appearance: none; -webkit-appearance: none;
+            width: 1.25rem; height: 1.25rem;
+            border: 2px solid var(--glass-border);
+            border-radius: 50%; margin-right: 0.75rem;
+            cursor: pointer; position: relative;
+            transition: all 0.2s ease-in-out;
+        }
+        input[type="radio"]:checked { border-color: var(--accent); }
+        input[type="radio"]:checked::before {
+            content: ''; display: block;
+            width: 0.65rem; height: 0.65rem;
+            background-color: var(--accent);
+            border-radius: 50%; position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--glass-border); opacity: 0.7; font-size: 13px; }
+        .footer p i { color: var(--accent); }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="shape"></div> <div class="shape"></div> <div class="shape"></div>
+    </div>
+
+    <main class="container-main">
+        <!-- Header -->
+        <div class="mb-0 mt-0">
+            <div class="flex flex-col items-center">
+                <div class="mb-0">
+                    <img src="../logo.svg" alt="Premiumisme Logo" class="h-20 w-100">
+                </div>
+                <nav class="flex justify-center flex-wrap gap-x-1 gap-y-2">
+                    <a href="emailcreate.html" class="px-3 py-2 bg-purple-600 text-white rounded-lg font-medium transition-all hover:bg-purple-700">Generator Email</a>
+                    <a href="../refund-calculator/refund-calculator.html" class="px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-all">Refund Calculator</a>
+                    <a href="../split-mail/email-splitter.html" class="px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-all">Email Splitter</a>
+                    <a href="../remove-duplicate/remove-duplicate.html" class="px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-all">Remove Duplicate</a>
+                    <a href="../shortlink/shortlink.html" class="px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg font-medium transition-all">Shortlink</a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Konten Utama -->
+        <div>
+            <!-- Input Section -->
+            <div id="main-section" class="fade-in">
+                <div class="bg-[var(--accent-glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-white mb-6">Pengaturan Generator</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="domain" class="block text-sm font-medium opacity-80 mb-2">Domain Email</label>
+                            <input type="text" id="domain" value="example.com" placeholder="contoh: example.com" class="w-full p-3 form-input">
+                        </div>
+                        <div>
+                            <label for="numEmails" class="block text-sm font-medium opacity-80 mb-2">Jumlah Email</label>
+                            <input type="number" id="numEmails" value="10" min="1" class="w-full p-3 form-input">
+                        </div>
+                        <div class="bg-[var(--darker-peri)] p-4 rounded-xl border border-[var(--glass-border)]">
+                            <label class="block text-sm font-medium mb-3">Tipe Nama</label>
+                            <div class="space-y-3">
+                                <div class="flex items-center"><input type="radio" id="randomChars" name="nameType" value="randomChars" checked><label for="randomChars" class="cursor-pointer">Karakter Acak</label></div>
+                                <div class="flex items-center"><input type="radio" id="randomNumeric" name="nameType" value="randomNumeric"><label for="randomNumeric" class="cursor-pointer">Numerik Acak</label></div>
+                                <div class="flex items-center"><input type="radio" id="randomAlphabet" name="nameType" value="randomAlphabet"><label for="randomAlphabet" class="cursor-pointer">Alfabet Acak</label></div>
+                                <div class="flex items-center"><input type="radio" id="randomNameNumeric" name="nameType" value="randomNameNumeric"><label for="randomNameNumeric" class="cursor-pointer">Nama + Numerik Acak</label></div>
+                            </div>
+                        </div>
+                        <div id="lengthInputContainer">
+                            <label for="usernameLength" class="block text-sm font-medium opacity-80 mb-2">Panjang Karakter</label>
+                            <input type="number" id="usernameLength" value="8" min="1" max="32" class="w-full p-3 form-input">
+                        </div>
+                        <button onclick="generateEmails()" class="w-full mt-2 btn btn-primary">
+                            <i class="fas fa-cogs"></i> Generate Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div id="result-section" class="hidden fade-in">
+                 <div class="bg-[var(--accent-glass-bg)] border border-[var(--glass-border)] rounded-xl p-6 h-full flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                        <h3 class="text-xl font-bold text-white">Hasil Email (<span id="resultCount">0</span>)</h3>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary text-sm" onclick="backToInput()"><i class="fas fa-arrow-left"></i> Kembali</button>
+                            <button id="copyGeneratedButton" class="btn btn-secondary text-sm" onclick="copyGeneratedEmails()" disabled><i class="fas fa-copy"></i> Salin</button>
+                            <button id="downloadGeneratedButton" class="btn btn-secondary text-sm" onclick="downloadGeneratedEmails()" disabled><i class="fas fa-download"></i> Unduh</button>
+                        </div>
+                    </div>
+                    <textarea id="resultOutput" class="w-full flex-grow p-3 form-input resize-none" readonly placeholder="Hasil email akan muncul di sini..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer">
+            <p>Made With <i class="fas fa-heart"></i> Premiumisme.</p>
+        </footer>
+    </main>
+
+    <div id="toast" class="fixed top-5 right-5 text-white px-6 py-3 rounded-xl shadow-lg transform translate-x-[120%] transition-transform duration-500 ease-in-out z-50" style="backdrop-filter: blur(10px);">
+        <span id="toastMessage">Berhasil!</span>
+    </div>
+
+    <script>
+        let generatedEmails = [];
+
+        function generateRandomString(length) {
+            const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) result += characters.charAt(Math.floor(Math.random() * characters.length));
+            return result;
+        }
+
+        function generateRandomNumeric(length = 8) {
+            let result = '';
+            for (let i = 0; i < length; i++) result += Math.floor(Math.random() * 10);
+            return result;
+        }
+
+        function generateRandomAlphabet(length = 8) {
+            const letters = 'abcdefghijklmnopqrstuvwxyz';
+            let result = '';
+            for (let i = 0; i < length; i++) result += letters.charAt(Math.floor(Math.random() * letters.length));
+            return result;
+        }
+
+        function generateRandomNameNumeric() {
+            const firstName = faker.name.firstName().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const randomNumbers = Math.floor(100 + Math.random() * 900);
+            return firstName + randomNumbers;
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.style.backgroundColor = type === 'error' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
+            toast.style.transform = 'translateX(0)';
+            setTimeout(() => { toast.style.transform = 'translateX(120%)'; }, 3000);
+        }
+        
+        function copyToClipboard(text, successMessage) {
+            navigator.clipboard.writeText(text).then(() => showToast(successMessage));
+        }
+
+        function generateEmails() {
+            const domain = document.getElementById('domain').value.trim();
+            const numEmails = parseInt(document.getElementById('numEmails').value);
+            const nameType = document.querySelector('input[name="nameType"]:checked').value;
+            const usernameLength = Math.max(1, Math.min(32, parseInt(document.getElementById('usernameLength').value) || 8));
+            
+            if (!domain || numEmails <= 0) {
+                showToast('Mohon masukkan domain dan jumlah email yang valid.', 'error');
+                return;
+            }
+            
+            const generatedEmailsSet = new Set();
+            const maxAttempts = numEmails * 3;
+            let attempts = 0;
+            
+            while (generatedEmailsSet.size < numEmails && attempts < maxAttempts) {
+                let username = '';
+                switch (nameType) {
+                    case 'randomChars': username = generateRandomString(usernameLength); break;
+                    case 'randomNumeric': username = generateRandomNumeric(usernameLength); break;
+                    case 'randomAlphabet': username = generateRandomAlphabet(usernameLength); break;
+                    case 'randomNameNumeric': username = generateRandomNameNumeric(); break;
+                }
+                generatedEmailsSet.add(`${username}@${domain}`);
+                attempts++;
+            }
+
+            generatedEmails = Array.from(generatedEmailsSet).sort();
+            
+            displayGeneratedResults();
+            showToast(`${generatedEmails.length} email berhasil dibuat!`);
+
+            document.getElementById('main-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+        }
+
+        function displayGeneratedResults() {
+            const resultOutput = document.getElementById('resultOutput');
+            const resultCount = document.getElementById('resultCount');
+            const downloadBtn = document.getElementById('downloadGeneratedButton');
+            const copyBtn = document.getElementById('copyGeneratedButton');
+            
+            resultOutput.value = generatedEmails.join('\n');
+            resultCount.textContent = generatedEmails.length;
+
+            const hasResults = generatedEmails.length > 0;
+            downloadBtn.disabled = !hasResults;
+            copyBtn.disabled = !hasResults;
+        }
+
+        function backToInput() {
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('main-section').classList.remove('hidden');
+            generatedEmails = [];
+            displayGeneratedResults(); // Clear the results view
+        }
+
+        function copyGeneratedEmails() {
+            if (generatedEmails.length === 0) return;
+            copyToClipboard(generatedEmails.join('\n'), `${generatedEmails.length} email berhasil disalin!`);
+        }
+
+        function downloadGeneratedEmails() {
+            if (generatedEmails.length === 0) return;
+            const emailsText = generatedEmails.join('\n');
+            const blob = new Blob([emailsText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `generated-emails.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showToast(`File berhasil diunduh!`);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const radioButtons = document.querySelectorAll('input[name="nameType"]');
+            const lengthContainer = document.getElementById('lengthInputContainer');
+            
+            function toggleLengthInput() {
+                const selectedType = document.querySelector('input[name="nameType"]:checked').value;
+                lengthContainer.style.display = selectedType === 'randomNameNumeric' ? 'none' : 'block';
+            }
+            
+            radioButtons.forEach(radio => radio.addEventListener('change', toggleLengthInput));
+            toggleLengthInput();
+        });
+    </script>
+</body>
+</html>
