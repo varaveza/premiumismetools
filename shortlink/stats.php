@@ -1,8 +1,62 @@
 <?php
 $page_title = 'Shortlink Stats - Statistik Link';
 $current_page = 'shortlink';
-include '../includes/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo isset($page_title) ? htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8') : 'Premiumisme'; ?></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <main class="container-main">
+        <!-- Header -->
+        <header class="header-section">
+            <!-- Mobile Hamburger Menu -->
+            <div class="mobile-nav-toggle">
+                <button id="hamburger-btn" class="hamburger-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+
+            <!-- Logo Section -->
+            <div class="logo-section">
+                <img src="../logo.svg" alt="Premiumisme Logo" class="logo">
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="desktop-nav">
+                <a href="../generator-email/" class="nav-link">Generator Email</a>
+                <a href="../refund-calculator/" class="nav-link">Refund Calculator</a>
+                <a href="../split-mail/" class="nav-link">Email Splitter</a>
+                <a href="../remove-duplicate/" class="nav-link">Remove Duplicate</a>
+                <a href="../shortlink/" class="nav-link active">Shortlink</a>
+            </nav>
+
+            <!-- Mobile Navigation Overlay -->
+            <div id="mobile-nav" class="mobile-nav">
+                <div class="mobile-nav-content">
+                    <a href="../generator-email/" class="mobile-nav-link">Generator Email</a>
+                    <a href="../refund-calculator/" class="mobile-nav-link">Refund Calculator</a>
+                    <a href="../split-mail/" class="mobile-nav-link">Email Splitter</a>
+                    <a href="../remove-duplicate/" class="mobile-nav-link">Remove Duplicate</a>
+                    <a href="../shortlink/" class="mobile-nav-link active">Shortlink</a>
+                </div>
+            </div>
+        </header>
 
 <?php
 // Get slug from URL path
@@ -284,4 +338,41 @@ setInterval(() => {
 
 </script>
 
-<?php include '../includes/footer.php'; ?>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+        // Mobile navigation toggle
+        document.getElementById('hamburger-btn').addEventListener('click', function() {
+            document.getElementById('mobile-nav').classList.toggle('active');
+            document.body.classList.toggle('nav-open');
+        });
+
+        // Close mobile nav when clicking outside
+        document.addEventListener('click', function(e) {
+            const mobileNav = document.getElementById('mobile-nav');
+            const hamburgerBtn = document.getElementById('hamburger-btn');
+            
+            if (!mobileNav.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                mobileNav.classList.remove('active');
+                document.body.classList.remove('nav-open');
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

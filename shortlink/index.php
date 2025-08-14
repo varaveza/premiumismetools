@@ -211,7 +211,7 @@ include '../includes/header.php';
     function viewStats() {
         if (currentShortlink) {
             // Redirect ke halaman stats dengan slug
-            window.open(`https://shortisme.com/${currentShortlink.slug}/stats.php`, '_blank');
+            window.open(`https://shortisme.com/${currentShortlink.slug}/stats`, '_blank');
             showToast('Membuka halaman statistik...');
         }
     }
