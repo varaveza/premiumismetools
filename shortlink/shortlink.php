@@ -15,10 +15,7 @@ include '../includes/header.php';
                     <label for="originalUrl" class="block text-sm font-medium opacity-80 mb-2">URL Asli:</label>
                     <input type="url" id="originalUrl" placeholder="https://example.com/very-long-url-here..." class="form-input">
                 </div>
-<<<<<<< HEAD
 
-=======
->>>>>>> 540ea07a7625ca845a3df12f14df24175dd39954
                 <button id="createButton" class="w-full btn btn-primary" onclick="createShortlink()" disabled>
                     <i class="fas fa-link"></i> Buat Shortlink
                 </button>
