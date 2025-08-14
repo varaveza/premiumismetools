@@ -1,8 +1,5 @@
 <?php
-// Database connection (gunakan file JSON sebagai database sederhana)
-$dbFile = 'shortlinks.json';
-
-// Get slug from URL
+$dbFile = __DIR__ . "/shortlinks.json";
 $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
 
 if (empty($slug)) {
@@ -11,14 +8,12 @@ if (empty($slug)) {
     exit;
 }
 
-// Load database
 if (file_exists($dbFile)) {
     $links = json_decode(file_get_contents($dbFile), true);
 } else {
     $links = [];
 }
 
-// Find the link
 $foundLink = null;
 foreach ($links as $link) {
     if ($link['slug'] === $slug) {
@@ -28,10 +23,7 @@ foreach ($links as $link) {
 }
 
 if ($foundLink) {
-    // Update click count
     $foundLink['clicks']++;
-    
-    // Update database
     foreach ($links as &$link) {
         if ($link['slug'] === $slug) {
             $link['clicks'] = $foundLink['clicks'];
@@ -39,8 +31,6 @@ if ($foundLink) {
         }
     }
     file_put_contents($dbFile, json_encode($links, JSON_PRETTY_PRINT));
-    
-    // Redirect to original URL
     header("Location: " . $foundLink['originalUrl']);
     exit;
 } else {

@@ -1,26 +1,12 @@
 RewriteEngine On
 
-# Security headers
-Header always set X-Content-Type-Options nosniff
-Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
+# Handle shortlink redirects (format: domain.com/randomstring)
+RewriteRule ^([A-Za-z0-9]{6})$ /shortlink/redirect.php?slug=$1 [L,QSA]
 
-# Prevent access to sensitive files
-<Files "*.json">
-    Order allow,deny
-    Deny from all
-</Files>
+# Handle stats pages (format: domain.com/randomstring/stats)
+RewriteRule ^([A-Za-z0-9]{6})/stats$ /shortlink/stats.php?slug=$1 [L,QSA]
 
-<Files ".htaccess">
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Redirect old file names to new structure
+# Default routing
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^shortlink/shortlink\.php$ /shortlink/ [L,R=301]
-RewriteRule ^generator-email/emailcreate\.php$ /generator-email/ [L,R=301]
-RewriteRule ^refund-calculator/refund-calculator\.php$ /refund-calculator/ [L,R=301]
-RewriteRule ^remove-duplicate/remove-duplicate\.php$ /remove-duplicate/ [L,R=301]
-RewriteRule ^split-mail/email-splitter\.php$ /split-mail/ [L,R=301]
+RewriteRule ^(.*)$ /index.php [L,QSA]
