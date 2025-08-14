@@ -207,10 +207,8 @@ function formatTimeDiff($diff) {
                         <i class="fas fa-tachometer-alt text-[var(--accent)]"></i>
                         Indikator Performa
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <?php
-                        $clickCount = $foundLink['clicks'];
-                        ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                         
 
                         
@@ -221,12 +219,7 @@ function formatTimeDiff($diff) {
                             <div class="text-sm opacity-70">Status Link</div>
                         </div>
                         
-                        <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
-                            <div class="text-2xl font-bold mb-2" style="color: <?php echo $clickCount > 0 ? 'var(--success-color)' : 'var(--light-peri)'; ?>">
-                                <?php echo $clickCount > 0 ? 'Terpakai' : 'Belum Terpakai'; ?>
-                            </div>
-                            <div class="text-sm opacity-70">Status Penggunaan</div>
-                        </div>
+
                         
                         <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
                             <div class="text-2xl font-bold mb-2 text-[var(--light-peri)]">
