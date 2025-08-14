@@ -6,11 +6,11 @@ Koleksi tools PHP yang berguna untuk berbagai keperluan.
 
 | Tool | File | Deskripsi |
 |------|------|-----------|
-| 🔗 **Shortlink** | `shortlink/shortlink.php` | Buat link pendek `domain.com/abc123` |
-| 📧 **Email Generator** | `generator-email/emailcreate.php` | Generate email acak dengan berbagai format |
-| 💰 **Refund Calculator** | `refund-calculator/refund-calculator.php` | Hitung refund berdasarkan masa penggunaan |
-| 🧹 **Remove Duplicate** | `remove-duplicate/remove-duplicate.php` | Hapus email duplikat dari list |
-| 📨 **Email Splitter** | `split-mail/email-splitter.php` | Bagi list email menjadi beberapa grup |
+| 🔗 **Shortlink** | `shortlink/` | Buat link pendek `domain.com/abc123` |
+| 📧 **Email Generator** | `generator-email/` | Generate email acak dengan berbagai format |
+| 💰 **Refund Calculator** | `refund-calculator/` | Hitung refund berdasarkan masa penggunaan |
+| 🧹 **Remove Duplicate** | `remove-duplicate/` | Hapus email duplikat dari list |
+| 📨 **Email Splitter** | `split-mail/` | Bagi list email menjadi beberapa grup |
 
 ## 🚀 Install
 

@@ -28,7 +28,7 @@
 shortlink/
 ├── .htaccess          # Apache config
 ├── nginx.conf         # Nginx config
-├── shortlink.php      # Main application
+├── index.php          # Main application
 ├── redirect.php       # Redirect handler
 ├── api.php           # API handler
 ├── stats.php         # Stats page (NEW!)
@@ -38,7 +38,7 @@ shortlink/
 
 ## 🔧 Cara Kerja
 
-1. **Buat shortlink**: `domain.com/shortlink/shortlink.php`
+1. **Buat shortlink**: `domain.com/shortlink/`
 2. **Hasil**: `domain.com/ks89sdd`
 3. **Klik link**: Otomatis redirect ke URL asli
 4. **Lihat stats**: `domain.com/ks89sdd/stats`

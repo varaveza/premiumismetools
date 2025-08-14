@@ -1,5 +1,13 @@
 RewriteEngine On
 
+# Ensure index.php is served as default
+DirectoryIndex index.php
+
+# Handle any direct access to old filename
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^shortlink\.php$ index.php [L,R=301]
+
 # Handle shortlink redirects (format: domain.com/randomstring)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

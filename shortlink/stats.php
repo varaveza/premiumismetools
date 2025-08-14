@@ -172,7 +172,7 @@ function formatTimeDiff($diff) {
 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <button onclick="window.location.href='shortlink.php'" class="btn btn-secondary flex-1">
+                    <button onclick="window.location.href='index.php'" class="btn btn-secondary flex-1">
                         <i class="fas fa-arrow-left"></i> Buat Link Baru
                     </button>
                     <button onclick="shareStats()" class="btn btn-primary flex-1">
@@ -192,7 +192,7 @@ function formatTimeDiff($diff) {
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="window.location.href='shortlink.php'" class="btn btn-primary">
+                    <button onclick="window.location.href='index.php'" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Buat Link Baru
                     </button>
                     <button onclick="window.history.back()" class="btn btn-secondary">

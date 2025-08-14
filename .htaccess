@@ -1,0 +1,26 @@
+RewriteEngine On
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+
+# Prevent access to sensitive files
+<Files "*.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".htaccess">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Redirect old file names to new structure
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^shortlink/shortlink\.php$ /shortlink/ [L,R=301]
+RewriteRule ^generator-email/emailcreate\.php$ /generator-email/ [L,R=301]
+RewriteRule ^refund-calculator/refund-calculator\.php$ /refund-calculator/ [L,R=301]
+RewriteRule ^remove-duplicate/remove-duplicate\.php$ /remove-duplicate/ [L,R=301]
+RewriteRule ^split-mail/email-splitter\.php$ /split-mail/ [L,R=301]

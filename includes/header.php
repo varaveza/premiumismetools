@@ -35,21 +35,21 @@
 
             <!-- Desktop Navigation -->
             <nav class="desktop-nav">
-                <a href="../generator-email/emailcreate.php" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                <a href="../refund-calculator/refund-calculator.php" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                <a href="../split-mail/email-splitter.php" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                <a href="../remove-duplicate/remove-duplicate.php" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                <a href="../shortlink/shortlink.php" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                <a href="../generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                <a href="../refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
+                <a href="../split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
+                <a href="../remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
+                <a href="../shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
             </nav>
 
             <!-- Mobile Navigation Overlay -->
             <div id="mobile-nav" class="mobile-nav">
                 <div class="mobile-nav-content">
-                    <a href="../generator-email/emailcreate.php" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                    <a href="../refund-calculator/refund-calculator.php" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                    <a href="../split-mail/email-splitter.php" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                    <a href="../remove-duplicate/remove-duplicate.php" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                    <a href="../shortlink/shortlink.php" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                    <a href="../generator-email/" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                    <a href="../refund-calculator/" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
+                    <a href="../split-mail/" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
+                    <a href="../remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
+                    <a href="../shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                 </div>
             </div>
         </header>

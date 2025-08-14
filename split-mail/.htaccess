@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Ensure index.php is served as default
+DirectoryIndex index.php
+
+# Handle any direct access to old filename
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^email-splitter\.php$ index.php [L,R=301]
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
