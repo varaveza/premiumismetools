@@ -32,7 +32,10 @@ include '../includes/header.php';
                     <button class="btn btn-secondary" onclick="backToInput()">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </button>
-                    <button id="createNewButton" class="btn btn-primary" onclick="createNewLink()">
+                    <button onclick="viewStats()" class="btn btn-primary">
+                        <i class="fas fa-chart-line"></i> Lihat Stats
+                    </button>
+                    <button id="createNewButton" class="btn btn-secondary" onclick="createNewLink()">
                         <i class="fas fa-plus"></i> Buat Baru
                     </button>
                 </div>
@@ -62,6 +65,9 @@ include '../includes/header.php';
                 <div class="flex gap-2">
                     <button onclick="testShortlink()" class="btn btn-primary flex-1">
                         <i class="fas fa-external-link-alt"></i> Test Link
+                    </button>
+                    <button onclick="viewStats()" class="btn btn-secondary">
+                        <i class="fas fa-chart-line"></i> Lihat Stats
                     </button>
                     <button onclick="deleteShortlink()" class="btn btn-secondary">
                         <i class="fas fa-trash"></i> Hapus
@@ -199,6 +205,14 @@ include '../includes/header.php';
             localStorage.setItem('shortlinks', JSON.stringify(links));
             backToInput();
             showToast('Shortlink berhasil dihapus');
+        }
+    }
+
+    function viewStats() {
+        if (currentShortlink) {
+            // Redirect ke halaman stats dengan slug
+            window.open(`https://shortisme.com/${currentShortlink.slug}/stats.php`, '_blank');
+            showToast('Membuka halaman statistik...');
         }
     }
 

@@ -2,19 +2,46 @@
 $page_title = 'Shortlink Stats - Statistik Link';
 $current_page = 'shortlink';
 include '../includes/header.php';
+?>
 
-// Get slug from URL
-$slug = $_GET['slug'] ?? '';
-$dbFile = 'shortlinks.json';
+<?php
+// Get slug from URL path
+$requestUri = $_SERVER['REQUEST_URI'];
+$pathParts = explode('/', trim($requestUri, '/'));
+$slug = '';
 
-// Load database
-if (file_exists($dbFile)) {
-    $links = json_decode(file_get_contents($dbFile), true);
+// Extract slug from URL like /OKXtEr/stats.php
+if (count($pathParts) >= 2 && $pathParts[1] === 'stats.php') {
+    $slug = $pathParts[0];
 } else {
+    // Fallback to GET parameter
+    $slug = $_GET['slug'] ?? '';
+}
+
+// Load data from external URL
+$externalUrl = 'https://shortisme.com/shortlink/shortlinks.json';
+$links = [];
+
+try {
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'user_agent' => 'Mozilla/5.0 (compatible; ShortlinkStats/1.0)'
+        ]
+    ]);
+    
+    $jsonData = file_get_contents($externalUrl, false, $context);
+    if ($jsonData !== false) {
+        $links = json_decode($jsonData, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $links = [];
+        }
+    }
+} catch (Exception $e) {
     $links = [];
 }
 
-// Find the link
+// Find the link by slug
 $foundLink = null;
 foreach ($links as $link) {
     if ($link['slug'] === $slug) {
@@ -47,8 +74,8 @@ function formatTimeDiff($diff) {
             <div class="content-section">
                 <div class="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-white mb-2">Statistik Shortlink</h2>
-                        <p class="opacity-70">Analisis performa link Anda</p>
+                        <h2 class="text-2xl font-bold text-white mb-2">📊 Statistik Shortlink</h2>
+                        <p class="opacity-70">Analisis performa link: <span class="text-[var(--accent)]"><?php echo htmlspecialchars($slug); ?></span></p>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="window.location.href='<?php echo $foundLink['originalUrl']; ?>'" class="btn btn-primary text-sm">
@@ -187,8 +214,18 @@ function formatTimeDiff($diff) {
             <div class="content-section text-center">
                 <div class="mb-6">
                     <i class="fas fa-exclamation-triangle text-6xl text-[var(--error-color)] mb-4"></i>
-                    <h2 class="text-2xl font-bold text-white mb-2">Shortlink Tidak Ditemukan</h2>
-                    <p class="opacity-70 mb-6">Link yang Anda cari tidak ada atau sudah dihapus.</p>
+                    <h2 class="text-2xl font-bold text-white mb-2">❌ Shortlink Tidak Ditemukan</h2>
+                    <p class="opacity-70 mb-2">Link <span class="text-[var(--accent)]"><?php echo htmlspecialchars($slug); ?></span> tidak ditemukan.</p>
+                    <p class="text-sm opacity-60 mb-6">Link mungkin sudah dihapus atau belum dibuat.</p>
+                </div>
+                
+                <div class="bg-[var(--darker-peri)] p-4 rounded-xl border border-[var(--glass-border)] mb-6">
+                    <h3 class="font-bold text-white mb-3">🔍 Tips:</h3>
+                    <ul class="text-sm opacity-70 text-left space-y-1">
+                        <li>• Pastikan URL shortlink sudah benar</li>
+                        <li>• Link mungkin sudah dihapus oleh pemilik</li>
+                        <li>• Coba buat link baru dengan slug yang berbeda</li>
+                    </ul>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -234,13 +271,17 @@ function shareStats() {
     }
 }
 
-// Auto-refresh stats every 30 seconds
+// Auto-refresh stats every 30 seconds (only if link exists)
+<?php if ($foundLink): ?>
 setInterval(() => {
-    // Only refresh if user is on the page
+    // Only refresh if user is on the page and link exists
     if (!document.hidden) {
         location.reload();
     }
 }, 30000);
+<?php endif; ?>
+
+
 </script>
 
 <?php include '../includes/footer.php'; ?>
