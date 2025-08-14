@@ -210,36 +210,22 @@ function formatTimeDiff($diff) {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <?php
                         $clickCount = $foundLink['clicks'];
-                        $performance = 'Baik';
-                        $color = 'var(--success-color)';
-                        
-                        if ($clickCount == 0) {
-                            $performance = 'Belum Ada Klik';
-                            $color = 'var(--error-color)';
-                        } elseif ($clickCount < 10) {
-                            $performance = 'Sedang';
-                            $color = 'var(--light-peri)';
-                        } elseif ($clickCount < 50) {
-                            $performance = 'Baik';
-                            $color = 'var(--success-color)';
-                        } else {
-                            $performance = 'Sangat Baik';
-                            $color = 'var(--accent)';
-                        }
                         ?>
                         
-                        <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
-                            <div class="text-2xl font-bold mb-2" style="color: <?php echo $color; ?>">
-                                <?php echo $performance; ?>
-                            </div>
-                            <div class="text-sm opacity-70">Status Performa</div>
-                        </div>
+
                         
                         <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
                             <div class="text-2xl font-bold mb-2 text-[var(--accent)]">
-                                <?php echo $clickCount > 0 ? 'Aktif' : 'Tidak Aktif'; ?>
+                                Aktif
                             </div>
                             <div class="text-sm opacity-70">Status Link</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
+                            <div class="text-2xl font-bold mb-2" style="color: <?php echo $clickCount > 0 ? 'var(--success-color)' : 'var(--light-peri)'; ?>">
+                                <?php echo $clickCount > 0 ? 'Terpakai' : 'Belum Terpakai'; ?>
+                            </div>
+                            <div class="text-sm opacity-70">Status Penggunaan</div>
                         </div>
                         
                         <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
