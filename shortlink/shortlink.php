@@ -16,17 +16,6 @@ include '../includes/header.php';
                     <input type="url" id="originalUrl" placeholder="https://example.com/very-long-url-here..." class="form-input">
                 </div>
 
-                <!-- Warning about limitations -->
-                <div class="bg-green-500/20 border border-green-500/30 rounded-lg p-3 text-sm">
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
-                        <div>
-                            <p class="font-medium text-green-400 mb-1">Fitur Baru!</p>
-                            <p class="text-green-300/80">Shortlink sekarang bisa di-share ke user lain dan akan bekerja di semua browser!</p>
-                        </div>
-                    </div>
-                </div>
-
                 <button id="createButton" class="w-full btn btn-primary" onclick="createShortlink()" disabled>
                     <i class="fas fa-link"></i> Buat Shortlink
                 </button>
