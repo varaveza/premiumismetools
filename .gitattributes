@@ -1,0 +1,28 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force bash scripts to use LF
+*.sh text eol=lf
+
+# Force PHP files to use LF
+*.php text eol=lf
+
+# Force config files to use LF
+*.conf text eol=lf
+*.cfg text eol=lf
+
+# Force documentation to use LF
+*.md text eol=lf
+*.txt text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.zip binary
+*.rar binary
+*.7z binary
+*.pdf binary
