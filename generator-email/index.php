@@ -4,8 +4,8 @@ $current_page = 'generator';
 include '../includes/header.php';
 ?>
 
-<!-- Konten Utama -->
-<div>
+<!-- Content Wrapper untuk standarisasi layout -->
+<div class="content-wrapper">
     <!-- Input Section -->
     <div id="main-section" class="fade-in">
         <div class="content-section">
@@ -17,28 +17,16 @@ include '../includes/header.php';
                 </div>
                 <div>
                     <label for="numEmails" class="block text-sm font-medium opacity-80 mb-2">Jumlah Email</label>
-                    <input type="number" id="numEmails" value="10" min="1" class="form-input">
+                    <input type="number" id="numEmails" value="10" min="1" max="5000" class="form-input">
                 </div>
-                <div class="bg-[var(--darker-peri)] p-4 rounded-xl border border-[var(--glass-border)]">
-                    <label class="block text-sm font-medium mb-3">Tipe Nama</label>
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <input type="radio" id="randomChars" name="nameType" value="randomChars" checked>
-                            <label for="randomChars" class="cursor-pointer">Karakter Acak</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="randomNumeric" name="nameType" value="randomNumeric">
-                            <label for="randomNumeric" class="cursor-pointer">Numerik Acak</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="randomAlphabet" name="nameType" value="randomAlphabet">
-                            <label for="randomAlphabet" class="cursor-pointer">Alfabet Acak</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="randomNameNumeric" name="nameType" value="randomNameNumeric">
-                            <label for="randomNameNumeric" class="cursor-pointer">Nama + Numerik Acak</label>
-                        </div>
-                    </div>
+                <div class="result-card">
+                    <label for="nameType" class="block text-sm font-medium mb-3">Tipe Nama</label>
+                    <select id="nameType" class="form-input" onchange="toggleLengthInput()">
+                        <option value="randomChars">Karakter Acak</option>
+                        <option value="randomNumeric">Numerik Acak</option>
+                        <option value="randomAlphabet">Alfabet Acak</option>
+                        <option value="randomNameNumeric">Nama + Numerik Acak</option>
+                    </select>
                 </div>
                 <div id="lengthInputContainer">
                     <label for="usernameLength" class="block text-sm font-medium opacity-80 mb-2">Panjang Karakter</label>
@@ -53,7 +41,7 @@ include '../includes/header.php';
 
     <!-- Result Section -->
     <div id="result-section" class="hidden fade-in">
-        <div class="content-section h-full flex flex-col">
+        <div class="content-section">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h3 class="text-xl font-bold text-white">Hasil Email (<span id="resultCount">0</span>)</h3>
                 <div class="flex gap-2">
@@ -69,6 +57,26 @@ include '../includes/header.php';
                 </div>
             </div>
             <textarea id="resultOutput" class="w-full flex-grow p-3 form-input resize-none" readonly placeholder="Hasil email akan muncul di sini..."></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-[var(--darker-peri)] border border-[var(--glass-border)] rounded-xl p-6 max-w-md mx-4">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-[var(--error-color)] rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Batas Maksimal</h3>
+        </div>
+        <p class="text-[var(--text-light)] mb-6">
+            Jumlah email yang dapat dibuat maksimal <strong>5000</strong> email per generate untuk menjaga performa sistem.
+        </p>
+        <div class="flex justify-end">
+            <button onclick="closeErrorModal()" class="btn btn-primary px-6">
+                <i class="fas fa-check"></i> Mengerti
+            </button>
         </div>
     </div>
 </div>
@@ -116,11 +124,16 @@ include '../includes/header.php';
     function generateEmails() {
         const domain = document.getElementById('domain').value.trim();
         const numEmails = parseInt(document.getElementById('numEmails').value);
-        const nameType = document.querySelector('input[name="nameType"]:checked').value;
+        const nameType = document.getElementById('nameType').value;
         const usernameLength = Math.max(1, Math.min(32, parseInt(document.getElementById('usernameLength').value) || 8));
         
         if (!domain || numEmails <= 0) {
             showToast('Mohon masukkan domain dan jumlah email yang valid.', 'error');
+            return;
+        }
+        
+        if (numEmails > 5000) {
+            showErrorModal();
             return;
         }
         
@@ -188,17 +201,31 @@ include '../includes/header.php';
         showToast(`File berhasil diunduh!`);
     }
 
+    function showErrorModal() {
+        document.getElementById('errorModal').classList.remove('hidden');
+    }
+
+    function closeErrorModal() {
+        document.getElementById('errorModal').classList.add('hidden');
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        const radioButtons = document.querySelectorAll('input[name="nameType"]');
         const lengthContainer = document.getElementById('lengthInputContainer');
         
         function toggleLengthInput() {
-            const selectedType = document.querySelector('input[name="nameType"]:checked').value;
+            const selectedType = document.getElementById('nameType').value;
             lengthContainer.style.display = selectedType === 'randomNameNumeric' ? 'none' : 'block';
         }
         
-        radioButtons.forEach(radio => radio.addEventListener('change', toggleLengthInput));
+        // Initialize on page load
         toggleLengthInput();
+        
+        // Close modal when clicking outside
+        document.getElementById('errorModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeErrorModal();
+            }
+        });
     });
 </script>
 

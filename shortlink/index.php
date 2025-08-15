@@ -4,10 +4,10 @@ $current_page = 'shortlink';
 include '../includes/header.php';
 ?>
 
-<!-- Konten Utama -->
-<div>
+<!-- Content Wrapper untuk standarisasi layout -->
+<div class="content-wrapper flex items-center justify-center">
     <!-- Input Section -->
-    <div id="main-section" class="fade-in">
+    <div id="main-section" class="fade-in w-full">
         <div class="content-section">
             <h2>Buat Shortlink</h2>
             <div class="space-y-4">
@@ -24,7 +24,7 @@ include '../includes/header.php';
     </div>
 
     <!-- Result Section -->
-    <div id="result-section" class="hidden fade-in">
+    <div id="result-section" class="hidden fade-in w-full">
         <div class="content-section">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h3 class="text-xl font-bold text-white">Shortlink Berhasil Dibuat!</h3>
@@ -41,7 +41,7 @@ include '../includes/header.php';
                 </div>
             </div>
             
-            <div class="bg-[var(--darker-peri)] p-4 rounded-lg border border-[var(--glass-border)]">
+            <div class="result-card">
                 <div class="mb-3">
                     <label class="block text-sm font-medium opacity-80 mb-2">URL Asli:</label>
                     <div class="text-sm opacity-70 break-all" id="resultOriginalUrl"></div>
@@ -138,7 +138,7 @@ include '../includes/header.php';
             createdAt: new Date().toISOString()
         };
 
-        // Save to server (JSON file)
+        // Save to server (JSON file) via API
         saveToServer(shortlink);
         
         // Also save to localStorage for local management
@@ -156,9 +156,14 @@ include '../includes/header.php';
         formData.append('action', 'create');
         formData.append('data', JSON.stringify(shortlink));
 
-        fetch('api.php', {
+        // Use cross-domain API endpoint
+        fetch('https://shortisme.com/api.php', {
             method: 'POST',
-            body: formData
+            body: formData,
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json'
+            }
         })
         .then(response => response.json())
         .then(data => {

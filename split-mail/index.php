@@ -4,8 +4,8 @@ $current_page = 'splitter';
 include '../includes/header.php';
 ?>
 
-<!-- Konten Utama -->
-<div>
+<!-- Content Wrapper untuk standarisasi layout -->
+<div class="content-wrapper">
     <!-- Input Section -->
     <div id="main-section" class="fade-in">
         <div class="content-section">
@@ -18,7 +18,9 @@ include '../includes/header.php';
                 <textarea id="emailInput" placeholder="Masukkan email satu per baris" class="w-full h-40 p-3 form-input resize-none"></textarea>
                 <div class="flex justify-between items-center mt-2">
                     <span id="emailCount" class="text-sm opacity-70">0 email</span>
-                    <button onclick="clearEmails()" class="text-sm font-medium" style="color: var(--error-color);">Bersihkan</button>
+                    <button onclick="clearEmails()" class="btn btn-secondary text-sm">
+                        <i class="fas fa-trash"></i> Bersihkan
+                    </button>
                 </div>
             </div>
 
@@ -34,10 +36,10 @@ include '../includes/header.php';
 
             <div class="mt-6">
                 <label for="splitSize" class="block text-sm font-medium opacity-80 mb-2">Bagi per (X) email:</label>
-                <input type="number" id="splitSize" value="10" min="1" class="form-input">
+                <input type="number" id="splitSize" value="10" min="1" class="form-input w-full">
             </div>
 
-            <button id="splitButton" class="w-full mt-6 btn btn-primary" onclick="splitEmails()" disabled>
+            <button id="splitButton" class="w-full mt-2 btn btn-primary py-3" onclick="splitEmails()" disabled>
                 <i class="fas fa-columns"></i> Bagi Email
             </button>
         </div>
@@ -166,7 +168,7 @@ include '../includes/header.php';
             const group = allEmails.slice(i, i + splitSize);
             const groupIndex = Math.floor(i / splitSize) + 1;
             const groupCard = document.createElement('div');
-            groupCard.className = 'bg-[var(--darker-peri)] p-4 rounded-lg shadow-md border border-[var(--glass-border)]';
+            groupCard.className = 'result-card';
             groupCard.innerHTML = `
                 <div class="flex justify-between items-center mb-3">
                     <h4 class="font-bold text-white">Grup ${groupIndex} (${group.length})</h4>

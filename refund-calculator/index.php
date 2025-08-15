@@ -4,8 +4,8 @@ $current_page = 'refund';
 include '../includes/header.php';
 ?>
 
-<!-- Konten Utama -->
-<div>
+<!-- Content Wrapper untuk standarisasi layout -->
+<div class="content-wrapper">
     <!-- Input Section -->
     <div id="main-section" class="fade-in">
         <div class="content-section">
@@ -41,10 +41,15 @@ include '../includes/header.php';
                 </div>
             </div>
             <div class="mt-6">
-                <button onclick="hitungRefund()" class="btn-primary w-full">Hitung Refund</button>
+                <label for="jumlahClaim" class="block text-sm font-medium opacity-80 mb-2">Jumlah Claim Garansi</label>
+                <input type="number" id="jumlahClaim" placeholder="0" class="form-input w-full" min="0" step="1" value="0">
+            </div>
+            <div class="mt-6">
+                <button onclick="hitungRefund()" class="btn btn-primary w-full rounded-full py-3">
+                    <i class="fas fa-calculator"></i> Hitung Refund
+                </button>
             </div>
         </div>
-    </div>
 
     <!-- Results Section -->
     <div id="results-section" class="fade-in hidden">
@@ -81,6 +86,18 @@ include '../includes/header.php';
                         <span id="resultHariDigunakan" class="font-bold"></span>
                     </div>
                     <div class="flex justify-between">
+                        <span class="opacity-70">Sisa Hari:</span>
+                        <span id="resultSisaHari" class="font-bold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="opacity-70">Jumlah Claim Garansi:</span>
+                        <span id="resultJumlahClaim" class="font-bold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="opacity-70">Biaya Service:</span>
+                        <span id="resultBiayaService" class="font-bold"></span>
+                    </div>
+                    <div class="flex justify-between">
                         <span class="opacity-70">Proporsi Penggunaan:</span>
                         <span id="resultProporsi" class="font-bold"></span>
                     </div>
@@ -99,8 +116,8 @@ include '../includes/header.php';
                 </div>
             </div>
             <div class="mt-6 flex gap-4">
-                <button onclick="resetCalculator()" class="btn-secondary flex-1">Hitung Ulang</button>
-                <button onclick="copyResults()" class="btn-primary flex-1">Salin Hasil</button>
+                <button onclick="resetCalculator()" class="btn btn-secondary flex-1">Hitung Ulang</button>
+                <button onclick="copyResults()" class="btn btn-primary flex-1">Salin Hasil</button>
             </div>
         </div>
     </div>
@@ -120,6 +137,7 @@ function hitungRefund() {
     const tanggalPembelian = document.getElementById('tanggalPembelian').value;
     const tanggalKendala = document.getElementById('tanggalKendala').value;
     const masaAktif = parseInt(document.getElementById('masaAktif').value);
+    const jumlahClaim = parseInt(document.getElementById('jumlahClaim').value) || 0;
 
     // Validasi input
     if (!namaProduk || !username || !hargaProduk || !tanggalPembelian || !tanggalKendala || !masaAktif) {
@@ -143,10 +161,27 @@ function hitungRefund() {
         return;
     }
 
-    // Hitung proporsi penggunaan
-    const proporsiPenggunaan = Math.min(hariDigunakan / masaAktif, 1);
-    const biayaPenggunaan = hargaProduk * proporsiPenggunaan;
-    const refund = hargaProduk - biayaPenggunaan;
+    // Hitung sisa hari
+    const sisaHari = Math.max(0, masaAktif - hariDigunakan);
+
+    // Tentukan biaya service berdasarkan jumlah claim garansi
+    let biayaService;
+    if (hariDigunakan < 7) {
+        biayaService = 0.8; // Pemakaian kurang dari 1 minggu
+    } else if (jumlahClaim === 0) {
+        biayaService = 0.7; // Belum pernah claim garansi tapi sudah lebih dari seminggu
+    } else if (jumlahClaim >= 1 && jumlahClaim <= 2) {
+        biayaService = 0.6; // Sudah pernah claim garansi 1-2x
+    } else if (jumlahClaim === 3) {
+        biayaService = 0.5; // Sudah pernah claim garansi 3x
+    } else {
+        biayaService = 0.4; // Sudah pernah claim garansi > 3x
+    }
+
+    // Hitung refund menggunakan rumus: (harga × sisa hari : durasi) × biaya service
+    const proporsiSisa = sisaHari / masaAktif;
+    const refundSebelumService = hargaProduk * proporsiSisa;
+    const refund = refundSebelumService * biayaService;
 
     // Tentukan status
     let status, statusColor;
@@ -178,8 +213,11 @@ function hitungRefund() {
     document.getElementById('resultTanggalKendala').textContent = new Date(tanggalKendala).toLocaleDateString('id-ID');
     document.getElementById('resultMasaAktif').textContent = masaAktif + ' hari';
     document.getElementById('resultHariDigunakan').textContent = hariDigunakan + ' hari';
-    document.getElementById('resultProporsi').textContent = (proporsiPenggunaan * 100).toFixed(1) + '%';
-    document.getElementById('resultBiayaPenggunaan').textContent = formatCurrency(biayaPenggunaan);
+    document.getElementById('resultSisaHari').textContent = sisaHari + ' hari';
+    document.getElementById('resultJumlahClaim').textContent = jumlahClaim + ' kali';
+    document.getElementById('resultBiayaService').textContent = (biayaService * 100) + '%';
+    document.getElementById('resultProporsi').textContent = (proporsiSisa * 100).toFixed(1) + '%';
+    document.getElementById('resultBiayaPenggunaan').textContent = formatCurrency(hargaProduk - refundSebelumService);
     document.getElementById('resultStatus').textContent = status;
     document.getElementById('resultStatus').style.color = statusColor;
     document.getElementById('resultRefund').textContent = formatCurrency(refund);
@@ -198,6 +236,7 @@ function resetCalculator() {
     document.getElementById('hargaProduk').value = '';
     document.getElementById('tanggalPembelian').value = '';
     document.getElementById('masaAktif').value = '';
+    document.getElementById('jumlahClaim').value = '0';
     
     // Reset tanggal kendala ke hari ini
     const today = new Date().toISOString().split('T')[0];
@@ -216,6 +255,9 @@ Tanggal Pembelian: ${document.getElementById('resultTanggalPembelian').textConte
 Tanggal Kendala: ${document.getElementById('resultTanggalKendala').textContent}
 Masa Aktif: ${document.getElementById('resultMasaAktif').textContent}
 Hari Digunakan: ${document.getElementById('resultHariDigunakan').textContent}
+Sisa Hari: ${document.getElementById('resultSisaHari').textContent}
+Jumlah Claim Garansi: ${document.getElementById('resultJumlahClaim').textContent}
+Biaya Service: ${document.getElementById('resultBiayaService').textContent}
 Proporsi Penggunaan: ${document.getElementById('resultProporsi').textContent}
 Biaya Penggunaan: ${document.getElementById('resultBiayaPenggunaan').textContent}
 Status: ${document.getElementById('resultStatus').textContent}

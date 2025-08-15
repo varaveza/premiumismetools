@@ -11,7 +11,7 @@ $current_page = 'shortlink';
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://premiumisme.co/tools/assets/css/style.css">
 </head>
 <body>
     <div class="bg-animation">
@@ -34,26 +34,26 @@ $current_page = 'shortlink';
 
             <!-- Logo Section -->
             <div class="logo-section">
-                <img src="../logo.svg" alt="Premiumisme Logo" class="logo">
+                <img src="https://premiumisme.co/tools/logo.svg" alt="Shortisme Logo" class="logo">
             </div>
 
             <!-- Desktop Navigation -->
             <nav class="desktop-nav">
-                <a href="../generator-email/" class="nav-link">Generator Email</a>
-                <a href="../refund-calculator/" class="nav-link">Refund Calculator</a>
-                <a href="../split-mail/" class="nav-link">Email Splitter</a>
-                <a href="../remove-duplicate/" class="nav-link">Remove Duplicate</a>
-                <a href="../shortlink/" class="nav-link active">Shortlink</a>
+                <a href="https://premiumisme.co/tools/generator-email/" class="nav-link">Generator Email</a>
+                <a href="https://premiumisme.co/tools/refund-calculator/" class="nav-link">Refund Calculator</a>
+                <a href="https://premiumisme.co/tools/split-mail/" class="nav-link">Email Splitter</a>
+                <a href="https://premiumisme.co/tools/remove-duplicate/" class="nav-link">Remove Duplicate</a>
+                <a href="https://premiumisme.co/tools/shortlink/" class="nav-link active">Shortlink</a>
             </nav>
 
             <!-- Mobile Navigation Overlay -->
             <div id="mobile-nav" class="mobile-nav">
                 <div class="mobile-nav-content">
-                    <a href="../generator-email/" class="mobile-nav-link">Generator Email</a>
-                    <a href="../refund-calculator/" class="mobile-nav-link">Refund Calculator</a>
-                    <a href="../split-mail/" class="mobile-nav-link">Email Splitter</a>
-                    <a href="../remove-duplicate/" class="mobile-nav-link">Remove Duplicate</a>
-                    <a href="../shortlink/" class="mobile-nav-link active">Shortlink</a>
+                    <a href="https://premiumisme.co/tools/generator-email/" class="mobile-nav-link">Generator Email</a>
+                    <a href="https://premiumisme.co/tools/refund-calculator/" class="mobile-nav-link">Refund Calculator</a>
+                    <a href="https://premiumisme.co/tools/split-mail/" class="mobile-nav-link">Email Splitter</a>
+                    <a href="https://premiumisme.co/tools/remove-duplicate/" class="mobile-nav-link">Remove Duplicate</a>
+                    <a href="https://premiumisme.co/tools/shortlink/" class="mobile-nav-link active">Shortlink</a>
                 </div>
             </div>
         </header>
@@ -72,27 +72,18 @@ if (count($pathParts) >= 2 && $pathParts[1] === 'stats.php') {
     $slug = $_GET['slug'] ?? '';
 }
 
-// Load data from external URL
-$externalUrl = 'https://shortisme.com/shortlink/shortlinks.json';
+// Load data from local JSON file
+$dbFile = __DIR__ . '/shortlinks.json';
 $links = [];
 
-try {
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => 10,
-            'user_agent' => 'Mozilla/5.0 (compatible; ShortlinkStats/1.0)'
-        ]
-    ]);
-    
-    $jsonData = file_get_contents($externalUrl, false, $context);
+if (file_exists($dbFile)) {
+    $jsonData = file_get_contents($dbFile);
     if ($jsonData !== false) {
         $links = json_decode($jsonData, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $links = [];
         }
     }
-} catch (Exception $e) {
-    $links = [];
 }
 
 // Find the link by slug
@@ -232,7 +223,7 @@ function formatTimeDiff($diff) {
 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <button onclick="window.location.href='index.php'" class="btn btn-secondary flex-1">
+                    <button onclick="window.location.href='https://premiumisme.co/tools/shortlink/'" class="btn btn-secondary flex-1">
                         <i class="fas fa-arrow-left"></i> Buat Link Baru
                     </button>
                     <button onclick="shareStats()" class="btn btn-primary flex-1">
@@ -262,7 +253,7 @@ function formatTimeDiff($diff) {
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="window.location.href='index.php'" class="btn btn-primary">
+                    <button onclick="window.location.href='https://premiumisme.co/tools/shortlink/'" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Buat Link Baru
                     </button>
                     <button onclick="window.history.back()" class="btn btn-secondary">

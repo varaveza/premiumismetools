@@ -4,8 +4,8 @@ $current_page = 'duplicate';
 include '../includes/header.php';
 ?>
 
-<!-- Konten Utama -->
-<div>
+<!-- Content Wrapper untuk standarisasi layout -->
+<div class="content-wrapper">
     <!-- Input Section -->
     <div id="main-section" class="fade-in">
         <div class="content-section">
@@ -20,7 +20,7 @@ include '../includes/header.php';
                     </div>
                 </div>
                 
-                <div class="bg-[var(--darker-peri)] p-4 rounded-xl border border-[var(--glass-border)]">
+                <div class="result-card">
                     <label class="block text-sm font-medium mb-3">Opsi</label>
                     <div class="space-y-3">
                         <div class="flex items-center">
@@ -60,7 +60,7 @@ include '../includes/header.php';
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="bg-[var(--darker-peri)] p-4 rounded-lg border border-[var(--glass-border)]">
+                <div class="result-card">
                     <h4 class="font-bold text-white mb-3">Statistik</h4>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
@@ -82,7 +82,7 @@ include '../includes/header.php';
                     </div>
                 </div>
                 
-                <div class="bg-[var(--darker-peri)] p-4 rounded-lg border border-[var(--glass-border)]">
+                <div class="result-card">
                     <h4 class="font-bold text-white mb-3">Email Bersih</h4>
                     <textarea id="resultOutput" class="w-full h-32 p-2 form-input text-sm resize-none" readonly placeholder="Email yang sudah dibersihkan akan muncul di sini..."></textarea>
                 </div>

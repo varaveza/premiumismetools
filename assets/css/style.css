@@ -91,11 +91,12 @@ body.nav-open {
     100% { transform: translateY(-30px) translateX(20px); }
 }
 
-/* Main Container */
+/* Main Container - Standarisasi ukuran */
 .container-main {
     max-width: 900px;
+    min-height: 600px;
     width: 100%;
-    padding: 10px 25px 20px 25px;
+    padding: 20px 25px 30px 25px;
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -104,6 +105,8 @@ body.nav-open {
     box-shadow: 0 15px 35px var(--shadow-color);
     animation: fadeInScaleUp 0.8s ease-out forwards;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes fadeInScaleUp {
@@ -117,10 +120,19 @@ body.nav-open {
     }
 }
 
+/* Content Wrapper untuk standarisasi layout */
+.content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
 /* Header Section */
 .header-section {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    flex-shrink: 0;
 }
 
 /* Mobile Navigation Toggle */
@@ -172,7 +184,7 @@ body.nav-open {
 }
 
 .logo {
-    height: 100px;
+    height: 85px;
     width: 800px;
     object-fit: contain;
 }
@@ -360,6 +372,74 @@ input[type="radio"]:checked::before {
     transform: translate(-50%, -50%);
 }
 
+/* Checkbox Styling */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--glass-border);
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+}
+
+input[type="checkbox"]:checked {
+    border-color: var(--accent);
+    background-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::before {
+    content: '✓';
+    display: block;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Mobile Radio & Checkbox */
+@media (max-width: 768px) {
+    input[type="radio"],
+    input[type="checkbox"] {
+        width: 1.5rem;
+        height: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    input[type="radio"]:checked::before {
+        width: 0.8rem;
+        height: 0.8rem;
+    }
+
+    input[type="checkbox"]:checked::before {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    input[type="radio"],
+    input[type="checkbox"] {
+        width: 1.75rem;
+        height: 1.75rem;
+        margin-right: 1.25rem;
+    }
+
+    input[type="radio"]:checked::before {
+        width: 0.9rem;
+        height: 0.9rem;
+    }
+
+    input[type="checkbox"]:checked::before {
+        font-size: 1rem;
+    }
+}
+
 /* Tab Buttons */
 .tab-button-group {
     background: var(--darker-peri);
@@ -403,13 +483,36 @@ input[type="radio"]:checked::before {
     background-color: rgba(154, 155, 217, 0.25);
 }
 
-/* Content Sections */
+/* Content Sections - Standarisasi */
 .content-section {
     background: var(--accent-glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 24px;
+    height: 450px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* Custom Scrollbar */
+.content-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content-section::-webkit-scrollbar-track {
+    background: var(--darker-peri);
+    border-radius: 4px;
+}
+
+.content-section::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+.content-section::-webkit-scrollbar-thumb:hover {
+    background: var(--light-peri);
 }
 
 .content-section h2 {
@@ -417,6 +520,33 @@ input[type="radio"]:checked::before {
     font-weight: bold;
     color: white;
     margin-bottom: 24px;
+    flex-shrink: 0;
+}
+
+/* Result Card untuk standarisasi tampilan hasil */
+.result-card {
+    background: var(--darker-peri);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Result Section untuk standarisasi */
+#result-section .content-section {
+    height: 450px;
+}
+
+@media (max-width: 768px) {
+    #result-section .content-section {
+        height: 450px;
+    }
+}
+
+@media (max-width: 480px) {
+    #result-section .content-section {
+        height: 400px;
+    }
 }
 
 /* Footer */
@@ -427,6 +557,7 @@ input[type="radio"]:checked::before {
     border-top: 1px solid var(--glass-border);
     opacity: 0.7;
     font-size: 13px;
+    flex-shrink: 0;
 }
 
 .footer p i {
@@ -486,13 +617,14 @@ input[type="radio"]:checked::before {
 /* Responsive Design */
 @media (max-width: 768px) {
     .container-main {
-        padding: 10px 15px 15px 15px;
+        padding: 25px 15px 30px 15px;
         margin: 5px;
+        min-height: 600px;
     }
 
     .logo {
-        height: 60px;
-        width: 300px;
+        height: 45px;
+        width: 250px;
     }
 
     .desktop-nav {
@@ -504,21 +636,29 @@ input[type="radio"]:checked::before {
     }
 
     .header-section {
-        margin-bottom: 15px;
+        margin-bottom: 20px;
     }
 
     .content-section {
-        padding: 16px;
+        padding: 20px;
+        height: 450px;
     }
 
     .content-section h2 {
         font-size: 1.25rem;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
     }
 
     .btn {
-        padding: 10px 20px;
-        font-size: 13px;
+        padding: 12px 24px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+
+    .form-input {
+        padding: 14px;
+        font-size: 14px;
+        min-height: 44px;
     }
 
     .tab-button-group {
@@ -527,7 +667,8 @@ input[type="radio"]:checked::before {
     }
 
     .tab-button {
-        padding: 10px;
+        padding: 12px;
+        min-height: 44px;
     }
 
     .upload-area {
@@ -542,8 +683,9 @@ input[type="radio"]:checked::before {
 
 @media (max-width: 480px) {
     .container-main {
-        padding: 8px 12px 12px 12px;
+        padding: 20px 12px 25px 12px;
         border-radius: 20px;
+        min-height: 550px;
     }
 
     .logo {
@@ -552,17 +694,24 @@ input[type="radio"]:checked::before {
     }
 
     .content-section {
-        padding: 12px;
+        padding: 16px;
+        height: 400px;
+    }
+
+    .content-section h2 {
+        margin-bottom: 18px;
     }
 
     .btn {
-        padding: 8px 16px;
-        font-size: 12px;
+        padding: 14px 20px;
+        font-size: 14px;
+        min-height: 48px;
     }
 
     .form-input {
-        padding: 10px;
-        font-size: 13px;
+        padding: 16px;
+        font-size: 14px;
+        min-height: 48px;
     }
 
     .toast {
@@ -640,6 +789,27 @@ input[type="radio"]:checked::before {
     gap: 16px;
 }
 
+/* Mobile Gap */
+@media (max-width: 768px) {
+    .gap-2 {
+        gap: 12px;
+    }
+
+    .gap-4 {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .gap-2 {
+        gap: 16px;
+    }
+
+    .gap-4 {
+        gap: 24px;
+    }
+}
+
 /* Spacing */
 .mb-2 {
     margin-bottom: 8px;
@@ -659,6 +829,51 @@ input[type="radio"]:checked::before {
 
 .mt-6 {
     margin-top: 24px;
+}
+
+/* Mobile Spacing */
+@media (max-width: 768px) {
+    .mb-2 {
+        margin-bottom: 12px;
+    }
+
+    .mb-4 {
+        margin-bottom: 20px;
+    }
+
+    .mb-6 {
+        margin-bottom: 30px;
+    }
+
+    .mt-2 {
+        margin-top: 12px;
+    }
+
+    .mt-6 {
+        margin-top: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mb-2 {
+        margin-bottom: 16px;
+    }
+
+    .mb-4 {
+        margin-bottom: 24px;
+    }
+
+    .mb-6 {
+        margin-bottom: 36px;
+    }
+
+    .mt-2 {
+        margin-top: 16px;
+    }
+
+    .mt-6 {
+        margin-top: 36px;
+    }
 }
 
 /* Text Utilities */
