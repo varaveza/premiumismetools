@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Shortlink - Pembuat Link Pendek';
+$page_title = 'Premiumisme Tools - Shortlink';
 $current_page = 'shortlink';
 include '../includes/header.php';
 ?>

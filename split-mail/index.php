@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Email Splitter - Pembagi Email';
+$page_title = 'Premiumisme Tools - Email Splitter';
 $current_page = 'splitter';
 include '../includes/header.php';
 ?>

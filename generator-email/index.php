@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Email Generator - Buat Email';
+$page_title = 'Premiumisme Tools - Generator Email';
 $current_page = 'generator';
 include '../includes/header.php';
 ?>

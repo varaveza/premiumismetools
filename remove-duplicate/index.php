@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Remove Duplicate - Hapus Duplikat';
+$page_title = 'Premiumisme Tools - Remove Duplicate';
 $current_page = 'duplicate';
 include '../includes/header.php';
 ?>
