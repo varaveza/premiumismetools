@@ -289,6 +289,26 @@ body.nav-open {
     color: rgba(232, 232, 245, 0.5);
 }
 
+/* Select Dropdown Styling */
+select.form-input {
+    cursor: pointer;
+}
+
+select.form-input option {
+    background-color: var(--very-peri);
+    color: white;
+    padding: 8px 12px;
+}
+
+select.form-input option:hover {
+    background-color: var(--accent);
+}
+
+select.form-input option:checked {
+    background-color: var(--accent);
+    color: white;
+}
+
 /* Buttons */
 .btn {
     padding: 12px 24px;
