@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Premiumisme Tools - Shortlink';
+$page_title = 'Premiumisme Tools';
 $current_page = 'shortlink';
 include '../includes/header.php';
 ?>

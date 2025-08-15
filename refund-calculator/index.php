@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Premiumisme Tools - Refund Calculator';
+$page_title = 'Premiumisme Tools';
 $current_page = 'refund';
 include '../includes/header.php';
 ?>

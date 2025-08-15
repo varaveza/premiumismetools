@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Premiumisme Tools - Remove Duplicate';
+$page_title = 'Premiumisme Tools';
 $current_page = 'duplicate';
 include '../includes/header.php';
 ?>
