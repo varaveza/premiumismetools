@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Putih Kosong</title>
+    <title> I </title>
     <style>
 
         body {
@@ -30,7 +30,7 @@
 <body>
     <?php
 
-        echo str_repeat("hayolo ", 50000);
+        echo str_repeat("hayolo<br>", 50000);
     ?>
 </body>
 </html>
