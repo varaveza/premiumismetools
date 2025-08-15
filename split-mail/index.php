@@ -15,9 +15,9 @@ include '../includes/header.php';
             </div>
 
             <div id="manual-tab" class="tab-content">
-                <textarea id="emailInput" placeholder="Masukkan email satu per baris" class="w-full h-40 p-3 form-input resize-none"></textarea>
+                <textarea id="emailInput" placeholder="Masukkan email:password atau email saja, satu per baris" class="w-full h-40 p-3 form-input resize-none"></textarea>
                 <div class="flex justify-between items-center mt-2">
-                    <span id="emailCount" class="text-sm opacity-70">0 email</span>
+                    <span id="emailCount" class="text-sm opacity-70">0 baris</span>
                     <button onclick="clearEmails()" class="btn btn-secondary text-sm">
                         <i class="fas fa-trash"></i> Bersihkan
                     </button>
@@ -28,19 +28,19 @@ include '../includes/header.php';
                 <div class="upload-area text-center cursor-pointer" onclick="triggerFileInput('emailFile')" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                     <div class="mb-4"><i class="fas fa-upload fa-2x text-[var(--light-peri)]"></i></div>
                     <p class="opacity-80 mb-2">Klik atau jatuhkan file ke sini</p>
-                    <p class="text-sm opacity-60">Format: .txt, satu email per baris</p>
+                    <p class="text-sm opacity-60">Format: .txt, satu baris per data</p>
                     <input type="file" id="emailFile" class="hidden" accept=".txt" onchange="handleFileSelect(event)">
                 </div>
                 <div id="emailFileInfo" class="mt-3 text-sm opacity-70 hidden"></div>
             </div>
 
             <div class="mt-6">
-                <label for="splitSize" class="block text-sm font-medium opacity-80 mb-2">Bagi per (X) email:</label>
+                <label for="splitSize" class="block text-sm font-medium opacity-80 mb-2">Bagi per (X) baris:</label>
                 <input type="number" id="splitSize" value="10" min="1" class="form-input w-full">
             </div>
 
             <button id="splitButton" class="w-full mt-2 btn btn-primary py-3" onclick="splitEmails()" disabled>
-                <i class="fas fa-columns"></i> Bagi Email
+                <i class="fas fa-columns"></i> Bagi Data
             </button>
         </div>
     </div>
@@ -66,11 +66,11 @@ include '../includes/header.php';
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script>
-    let allEmails = [];
+    let allLines = [];
 
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('emailInput').addEventListener('input', updateEmailCount);
-        updateEmailCount();
+        document.getElementById('emailInput').addEventListener('input', updateLineCount);
+        updateLineCount();
     });
 
     function switchTab(type) {
@@ -80,14 +80,12 @@ include '../includes/header.php';
         document.getElementById('tab-file').classList.toggle('active', type !== 'manual');
     }
 
-    const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    function updateEmailCount() {
-        const emailInputText = document.getElementById('emailInput').value;
-        allEmails = emailInputText.split('\n').map(e => e.trim()).filter(e => e && validateEmail(e));
+    function updateLineCount() {
+        const inputText = document.getElementById('emailInput').value;
+        allLines = inputText.split('\n').map(line => line.trim()).filter(line => line);
         
-        document.getElementById('emailCount').textContent = `${allEmails.length} email valid`;
-        document.getElementById('splitButton').disabled = allEmails.length === 0;
+        document.getElementById('emailCount').textContent = `${allLines.length} baris`;
+        document.getElementById('splitButton').disabled = allLines.length === 0;
     }
 
     function clearEmails() {
@@ -96,7 +94,7 @@ include '../includes/header.php';
         fileInfo.classList.add('hidden');
         fileInfo.textContent = '';
         document.getElementById('emailFile').value = '';
-        updateEmailCount();
+        updateLineCount();
     }
 
     const triggerFileInput = (id) => document.getElementById(id).click();
@@ -143,15 +141,15 @@ include '../includes/header.php';
             const infoElement = document.getElementById('emailFileInfo');
             infoElement.textContent = `File: ${file.name} (${file.size} bytes)`;
             infoElement.classList.remove('hidden');
-            updateEmailCount();
-            showToast(`${allEmails.length} email berhasil dimuat.`);
+            updateLineCount();
+            showToast(`${allLines.length} baris berhasil dimuat.`);
         };
         reader.readAsText(file);
     }
 
     function splitEmails() {
-        if (allEmails.length === 0) {
-            showToast('Harap masukkan minimal satu email yang valid', 'error');
+        if (allLines.length === 0) {
+            showToast('Harap masukkan minimal satu baris data', 'error');
             return;
         }
         const splitSize = parseInt(document.getElementById('splitSize').value);
@@ -164,8 +162,8 @@ include '../includes/header.php';
         resultsContainer.innerHTML = '';
         document.getElementById('downloadAllButton').disabled = false;
 
-        for (let i = 0; i < allEmails.length; i += splitSize) {
-            const group = allEmails.slice(i, i + splitSize);
+        for (let i = 0; i < allLines.length; i += splitSize) {
+            const group = allLines.slice(i, i + splitSize);
             const groupIndex = Math.floor(i / splitSize) + 1;
             const groupCard = document.createElement('div');
             groupCard.className = 'result-card';
@@ -188,7 +186,7 @@ include '../includes/header.php';
 
         document.getElementById('main-section').classList.add('hidden');
         document.getElementById('result-section').classList.remove('hidden');
-        showToast('Email berhasil dibagi!');
+        showToast('Data berhasil dibagi!');
     }
     
     function getGroupText(groupIndex) {
@@ -207,7 +205,7 @@ include '../includes/header.php';
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `email-group-${groupIndex + 1}.txt`;
+        a.download = `group-${groupIndex + 1}.txt`;
         a.click();
         URL.revokeObjectURL(url);
         showToast(`Grup ${groupIndex + 1} berhasil diunduh`);
@@ -216,15 +214,15 @@ include '../includes/header.php';
     function downloadAllResults() {
         const splitSize = parseInt(document.getElementById('splitSize').value);
         const zip = new JSZip();
-        for (let i = 0; i < allEmails.length; i += splitSize) {
-            const group = allEmails.slice(i, i + splitSize);
+        for (let i = 0; i < allLines.length; i += splitSize) {
+            const group = allLines.slice(i, i + splitSize);
             zip.file(`group-${Math.floor(i / splitSize) + 1}.txt`, group.join('\n'));
         }
         zip.generateAsync({type:"blob"}).then(content => {
             const url = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `all-email-groups.zip`;
+            a.download = `all-groups.zip`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Semua grup berhasil diunduh (.zip)!');

@@ -9,13 +9,13 @@ include '../includes/header.php';
     <!-- Input Section -->
     <div id="main-section" class="fade-in">
         <div class="content-section">
-            <h2>Hapus Email Duplikat</h2>
+            <h2>Hapus Data Duplikat</h2>
             <div class="space-y-4">
                 <div>
-                    <label for="emailInput" class="block text-sm font-medium opacity-80 mb-2">Daftar Email</label>
-                    <textarea id="emailInput" placeholder="Masukkan email satu per baris..." class="w-full h-40 p-3 form-input resize-none"></textarea>
+                    <label for="emailInput" class="block text-sm font-medium opacity-80 mb-2">Daftar Data</label>
+                    <textarea id="emailInput" placeholder="Masukkan data satu per baris (email, email:password, dll)..." class="w-full h-40 p-3 form-input resize-none"></textarea>
                     <div class="flex justify-between items-center mt-2">
-                        <span id="emailCount" class="text-sm opacity-70">0 email</span>
+                        <span id="emailCount" class="text-sm opacity-70">0 baris</span>
                         <button onclick="clearEmails()" class="text-sm font-medium" style="color: var(--error-color);">Bersihkan</button>
                     </div>
                 </div>
@@ -30,6 +30,10 @@ include '../includes/header.php';
                         <div class="flex items-center">
                             <input type="checkbox" id="trimWhitespace" class="mr-3" checked>
                             <label for="trimWhitespace" class="cursor-pointer">Hapus spasi di awal dan akhir</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="extractEmailOnly" class="mr-3">
+                            <label for="extractEmailOnly" class="cursor-pointer">Extract email saja (untuk format email:password)</label>
                         </div>
                     </div>
                 </div>
@@ -64,11 +68,11 @@ include '../includes/header.php';
                     <h4 class="font-bold text-white mb-3">Statistik</h4>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
-                            <span class="opacity-70">Email Asli:</span>
+                            <span class="opacity-70">Data Asli:</span>
                             <span id="originalCount">0</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="opacity-70">Email Setelah Dibersihkan:</span>
+                            <span class="opacity-70">Data Setelah Dibersihkan:</span>
                             <span id="cleanedCount">0</span>
                         </div>
                         <div class="flex justify-between">
@@ -83,8 +87,8 @@ include '../includes/header.php';
                 </div>
                 
                 <div class="result-card">
-                    <h4 class="font-bold text-white mb-3">Email Bersih</h4>
-                    <textarea id="resultOutput" class="w-full h-32 p-2 form-input text-sm resize-none" readonly placeholder="Email yang sudah dibersihkan akan muncul di sini..."></textarea>
+                    <h4 class="font-bold text-white mb-3">Data Bersih</h4>
+                    <textarea id="resultOutput" class="w-full h-32 p-2 form-input text-sm resize-none" readonly placeholder="Data yang sudah dibersihkan akan muncul di sini..."></textarea>
                 </div>
             </div>
         </div>
@@ -104,7 +108,7 @@ include '../includes/header.php';
         const emailInputText = document.getElementById('emailInput').value;
         originalEmails = emailInputText.split('\n').map(e => e.trim()).filter(e => e);
         
-        document.getElementById('emailCount').textContent = `${originalEmails.length} email`;
+        document.getElementById('emailCount').textContent = `${originalEmails.length} baris`;
     }
 
     function clearEmails() {
@@ -112,21 +116,38 @@ include '../includes/header.php';
         updateEmailCount();
     }
 
+    function extractEmailFromLine(line) {
+        // Extract email from email:password format
+        const colonIndex = line.indexOf(':');
+        if (colonIndex !== -1) {
+            return line.substring(0, colonIndex).trim();
+        }
+        return line;
+    }
+
     function removeDuplicates() {
         if (originalEmails.length === 0) {
-            showToast('Harap masukkan minimal satu email', 'error');
+            showToast('Harap masukkan minimal satu baris data', 'error');
             return;
         }
 
         const caseSensitive = document.getElementById('caseSensitive').checked;
         const trimWhitespace = document.getElementById('trimWhitespace').checked;
+        const extractEmailOnly = document.getElementById('extractEmailOnly').checked;
 
         // Process emails
         let processedEmails = originalEmails.map(email => {
+            let processedEmail = email;
+            
             if (trimWhitespace) {
-                email = email.trim();
+                processedEmail = processedEmail.trim();
             }
-            return caseSensitive ? email : email.toLowerCase();
+            
+            if (extractEmailOnly) {
+                processedEmail = extractEmailFromLine(processedEmail);
+            }
+            
+            return caseSensitive ? processedEmail : processedEmail.toLowerCase();
         });
 
         // Remove duplicates while preserving order
@@ -167,7 +188,7 @@ include '../includes/header.php';
         document.getElementById('main-section').classList.add('hidden');
         document.getElementById('result-section').classList.remove('hidden');
 
-        showToast(`Berhasil menghapus ${duplicateCount} email duplikat!`);
+        showToast(`Berhasil menghapus ${duplicateCount} data duplikat!`);
     }
 
     function backToInput() {
@@ -178,7 +199,7 @@ include '../includes/header.php';
     function copyResult() {
         if (cleanedEmails.length === 0) return;
         navigator.clipboard.writeText(cleanedEmails.join('\n')).then(() => {
-            showToast(`${cleanedEmails.length} email berhasil disalin!`);
+            showToast(`${cleanedEmails.length} data berhasil disalin!`);
         });
     }
 
@@ -189,7 +210,7 @@ include '../includes/header.php';
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `cleaned-emails.txt`;
+        a.download = `cleaned-data.txt`;
         a.click();
         window.URL.revokeObjectURL(url);
         showToast(`File berhasil diunduh!`);
