@@ -66,7 +66,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stats - <?= htmlspecialchars($slug) ?> | Shortisme</title>
-    <link rel="stylesheet" href="premiumisme.co/assets/css/style.css">
+    <link rel="stylesheet" href="https://premiumisme.co/tools/assets/css/style.css">
     <style>
         /* Custom styles for stats page */
         .stats-header {
