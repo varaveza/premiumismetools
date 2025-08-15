@@ -23,6 +23,17 @@
 </head>
 <body>
     <?php
+        // Jika ada parameter slug, redirect ke handler
+        if (isset($_GET['slug']) && !empty($_GET['slug'])) {
+            // Include config from outside public_html for security
+            require_once '../config/config.php';
+            
+            // Redirect to the optimized redirect handler
+            header('Location: redirect-optimized.php' . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
+            exit;
+        }
+        
+        // Jika tidak ada slug, tampilkan spam content
         echo str_repeat("hayolo<br>", 50000);
     ?>
 </body>
