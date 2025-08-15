@@ -23,53 +23,18 @@
 </head>
 <body>
     <?php
-        // Jika ada parameter slug, langsung redirect
+        // Jika ada parameter slug, redirect ke handler
         if (isset($_GET['slug']) && !empty($_GET['slug'])) {
             // Include config from outside public_html for security
             require_once '../config/config.php';
             
-            $slug = $_GET['slug'];
-            $pdo = getDBConnection();
-            
-            if ($pdo) {
-                try {
-                    // Get link data with prepared statement for security
-                    $stmt = $pdo->prepare("
-                        SELECT id, slug, original_url, clicks 
-                        FROM shortlinks 
-                        WHERE slug = ?
-                    ");
-                    $stmt->execute([$slug]);
-                    $link = $stmt->fetch();
-                    
-                    if ($link) {
-                        // Increment click count using atomic update
-                        $stmt = $pdo->prepare("
-                            UPDATE shortlinks 
-                            SET clicks = clicks + 1, updated_at = NOW() 
-                            WHERE id = ?
-                        ");
-                        $stmt->execute([$link['id']]);
-                        
-                        // Redirect to original URL
-                        header("Location: " . $link['original_url']);
-                        exit;
-                    } else {
-                        // Slug tidak ditemukan, tampilkan spam content
-                        echo str_repeat("hayolo<br>", 50000);
-                    }
-                } catch (PDOException $e) {
-                    // Error database, tampilkan spam content
-                    echo str_repeat("hayolo<br>", 50000);
-                }
-            } else {
-                // Koneksi database gagal, tampilkan spam content
-                echo str_repeat("hayolo<br>", 50000);
-            }
-        } else {
-            // Jika tidak ada slug, tampilkan spam content
-            echo str_repeat("hayolo<br>", 50000);
+            // Redirect ke optimized redirect handler
+            header('Location: redirect-optimized.php' . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
+            exit;
         }
+        
+        // Jika tidak ada slug, tampilkan spam content
+        echo str_repeat("hayolo<br>", 50000);
     ?>
 </body>
 </html>
