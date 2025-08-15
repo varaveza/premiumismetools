@@ -46,7 +46,21 @@
             const toastMessage = document.getElementById('toastMessage');
             // Use textContent to prevent XSS
             toastMessage.textContent = message;
-            toast.style.backgroundColor = type === 'error' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
+            
+            // Set background color based on type
+            let bgColor;
+            switch(type) {
+                case 'error':
+                    bgColor = 'rgba(239, 68, 68, 0.7)';
+                    break;
+                case 'info':
+                    bgColor = 'rgba(59, 130, 246, 0.7)';
+                    break;
+                default:
+                    bgColor = 'rgba(34, 197, 94, 0.7)';
+            }
+            
+            toast.style.backgroundColor = bgColor;
             toast.style.transform = 'translateX(0)';
             toast.style.opacity = '1';
             toast.style.pointerEvents = 'auto';

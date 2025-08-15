@@ -1,348 +1,275 @@
 <?php
-$page_title = 'Shortlink Stats - Statistik Link';
-$current_page = 'shortlink';
+// Include config from outside public_html
+require_once '../config/config.php';
+
+// Rate limiting untuk stats
+$clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+if (!checkRateLimit($clientIP, 'stats', 50, 60)) {
+    http_response_code(429);
+    echo "<!DOCTYPE html><html><head><title>429 - Too Many Requests</title></head><body><h1>Too Many Requests</h1><p>Please try again later.</p></body></html>";
+    exit;
+}
+
+$slug = $_GET['slug'] ?? '';
+
+if (empty($slug)) {
+    header("HTTP/1.0 404 Not Found");
+    echo "<!DOCTYPE html><html><head><title>404 - Stats Not Found</title></head><body><h1>Stats tidak ditemukan</h1><p>Slug tidak valid atau kosong.</p></body></html>";
+    exit;
+}
+
+$pdo = getDBConnection();
+if (!$pdo) {
+    header("HTTP/1.0 500 Internal Server Error");
+    echo "<!DOCTYPE html><html><head><title>500 - Server Error</title></head><body><h1>Server Error</h1><p>Database connection failed.</p></body></html>";
+    exit;
+}
+
+try {
+    // Get link data
+    $stmt = $pdo->prepare("
+        SELECT id, slug, original_url, clicks, created_at 
+        FROM shortlinks 
+        WHERE slug = ?
+    ");
+    $stmt->execute([$slug]);
+    $link = $stmt->fetch();
+    
+    if (!$link) {
+        header("HTTP/1.0 404 Not Found");
+        echo "<!DOCTYPE html><html><head><title>404 - Link Not Found</title></head><body><h1>Link tidak ditemukan</h1><p>Link dengan slug '{$slug}' tidak ditemukan.</p></body></html>";
+        exit;
+    }
+    
+    // Get analytics data (last 30 days)
+    $stmt = $pdo->prepare("
+        SELECT DATE(clicked_at) as date, COUNT(*) as clicks
+        FROM link_analytics 
+        WHERE shortlink_id = ? 
+        AND clicked_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY DATE(clicked_at)
+        ORDER BY date DESC
+    ");
+    $stmt->execute([$link['id']]);
+    $analytics = $stmt->fetchAll();
+    
+} catch (PDOException $e) {
+    error_log("Database error in stats: " . $e->getMessage());
+    header("HTTP/1.0 500 Internal Server Error");
+    echo "<!DOCTYPE html><html><head><title>500 - Server Error</title></head><body><h1>Server Error</h1><p>Database error occurred.</p></body></html>";
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($page_title) ? htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8') : 'Premiumisme'; ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://premiumisme.co/tools/assets/css/style.css">
+    <title>Stats - <?= htmlspecialchars($slug) ?> | Shortisme</title>
+    <link rel="stylesheet" href="premiumisme.co/assets/css/style.css">
+    <style>
+        /* Custom styles for stats page */
+        .stats-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .stats-header h1 {
+            color: var(--accent);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .shortlink-info {
+            background: var(--accent-glass-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            word-break: break-all;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: var(--accent-glass-bg);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            color: var(--text-light);
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        .chart-container {
+            background: var(--accent-glass-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-light);
+            font-weight: bold;
+        }
+        
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .chart-label {
+            width: 80px;
+            font-size: 0.9em;
+            color: var(--text-light);
+        }
+        
+        .chart-bar-bg {
+            flex: 1;
+            height: 20px;
+            background: var(--darker-peri);
+            border-radius: 10px;
+            margin: 0 10px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .chart-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--light-peri));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .chart-value {
+            width: 50px;
+            text-align: right;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: var(--accent);
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link a:hover {
+            color: var(--light-peri);
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-label {
+                width: 60px;
+                font-size: 0.8em;
+            }
+            
+            .chart-value {
+                width: 40px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Background Animation -->
     <div class="bg-animation">
         <div class="shape"></div>
         <div class="shape"></div>
         <div class="shape"></div>
     </div>
 
-    <main class="container-main">
-        <!-- Header -->
-        <header class="header-section">
-            <!-- Mobile Hamburger Menu -->
-            <div class="mobile-nav-toggle">
-                <button id="hamburger-btn" class="hamburger-btn">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
-
-            <!-- Logo Section -->
-            <div class="logo-section">
-                <img src="https://premiumisme.co/tools/logo.svg" alt="Shortisme Logo" class="logo">
-            </div>
-
-            <!-- Desktop Navigation -->
-            <nav class="desktop-nav">
-                <a href="https://premiumisme.co/tools/generator-email/" class="nav-link">Generator Email</a>
-                <a href="https://premiumisme.co/tools/refund-calculator/" class="nav-link">Refund Calculator</a>
-                <a href="https://premiumisme.co/tools/split-mail/" class="nav-link">Email Splitter</a>
-                <a href="https://premiumisme.co/tools/remove-duplicate/" class="nav-link">Remove Duplicate</a>
-                <a href="https://premiumisme.co/tools/shortlink/" class="nav-link active">Shortlink</a>
-            </nav>
-
-            <!-- Mobile Navigation Overlay -->
-            <div id="mobile-nav" class="mobile-nav">
-                <div class="mobile-nav-content">
-                    <a href="https://premiumisme.co/tools/generator-email/" class="mobile-nav-link">Generator Email</a>
-                    <a href="https://premiumisme.co/tools/refund-calculator/" class="mobile-nav-link">Refund Calculator</a>
-                    <a href="https://premiumisme.co/tools/split-mail/" class="mobile-nav-link">Email Splitter</a>
-                    <a href="https://premiumisme.co/tools/remove-duplicate/" class="mobile-nav-link">Remove Duplicate</a>
-                    <a href="https://premiumisme.co/tools/shortlink/" class="mobile-nav-link active">Shortlink</a>
-                </div>
-            </div>
-        </header>
-
-<?php
-// Get slug from URL path
-$requestUri = $_SERVER['REQUEST_URI'];
-$pathParts = explode('/', trim($requestUri, '/'));
-$slug = '';
-
-// Extract slug from URL like /OKXtEr/stats.php
-if (count($pathParts) >= 2 && $pathParts[1] === 'stats.php') {
-    $slug = $pathParts[0];
-} else {
-    // Fallback to GET parameter
-    $slug = $_GET['slug'] ?? '';
-}
-
-// Load data from local JSON file
-$dbFile = __DIR__ . '/shortlinks.json';
-$links = [];
-
-if (file_exists($dbFile)) {
-    $jsonData = file_get_contents($dbFile);
-    if ($jsonData !== false) {
-        $links = json_decode($jsonData, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $links = [];
-        }
-    }
-}
-
-// Find the link by slug
-$foundLink = null;
-foreach ($links as $link) {
-    if ($link['slug'] === $slug) {
-        $foundLink = $link;
-        break;
-    }
-}
-
-// Calculate time since creation
-$createdTime = $foundLink ? new DateTime($foundLink['createdAt']) : null;
-$now = new DateTime();
-$timeDiff = $createdTime ? $now->diff($createdTime) : null;
-
-// Format time difference
-function formatTimeDiff($diff) {
-    if ($diff->y > 0) return $diff->y . ' tahun yang lalu';
-    if ($diff->m > 0) return $diff->m . ' bulan yang lalu';
-    if ($diff->d > 0) return $diff->d . ' hari yang lalu';
-    if ($diff->h > 0) return $diff->h . ' jam yang lalu';
-    if ($diff->i > 0) return $diff->i . ' menit yang lalu';
-    return 'Baru saja';
-}
-?>
-
-<!-- Konten Utama -->
-<div>
-    <?php if ($foundLink): ?>
-        <!-- Stats Section -->
-        <div class="fade-in">
+    <div class="container-main">
+        <div class="content-wrapper">
             <div class="content-section">
-                <div class="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold text-white mb-2">📊 Statistik Shortlink</h2>
-                        <p class="opacity-70">Analisis performa link: <span class="text-[var(--accent)]"><?php echo htmlspecialchars($slug); ?></span></p>
+                <div class="stats-header">
+                    <h1>📊 Statistik Link</h1>
+                    <p>Analisis performa shortlink Anda</p>
+                </div>
+
+                <div class="shortlink-info">
+                    <strong>Shortlink:</strong> https://shortisme.com/<?= htmlspecialchars($slug) ?><br>
+                    <strong>URL Asli:</strong> <?= htmlspecialchars($link['original_url']) ?>
+                </div>
+                        
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number"><?= number_format($link['clicks']) ?></div>
+                        <div class="stat-label">Total Klik</div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.location.href='<?php echo $foundLink['originalUrl']; ?>'" class="btn btn-primary text-sm">
-                            <i class="fas fa-external-link-alt"></i> Kunjungi Link
-                        </button>
-                        <button onclick="copyShortUrl()" class="btn btn-secondary text-sm">
-                            <i class="fas fa-copy"></i> Salin
-                        </button>
+                    <div class="stat-item">
+                        <div class="stat-number"><?= date('d/m/Y', strtotime($link['created_at'])) ?></div>
+                        <div class="stat-label">Tanggal Dibuat</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?= count($analytics) ?></div>
+                        <div class="stat-label">Hari Aktif (30 hari)</div>
                     </div>
                 </div>
 
-                <!-- Main Stats Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- Shortlink Info -->
-                    <div class="bg-[var(--darker-peri)] p-6 rounded-xl border border-[var(--glass-border)]">
-                        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
-                            <i class="fas fa-link text-[var(--accent)]"></i>
-                            Informasi Link
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <span class="opacity-70">Shortlink:</span>
-                                <div class="short-url text-sm"><?php echo htmlspecialchars($foundLink['shortUrl']); ?></div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="opacity-70">URL Asli:</span>
-                                <span class="text-sm break-all opacity-70"><?php echo htmlspecialchars($foundLink['originalUrl']); ?></span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="opacity-70">Dibuat:</span>
-                                <span class="text-sm opacity-70"><?php echo $createdTime ? $createdTime->format('d/m/Y H:i') : 'N/A'; ?></span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="opacity-70">Usia:</span>
-                                <span class="text-sm opacity-70"><?php echo $timeDiff ? formatTimeDiff($timeDiff) : 'N/A'; ?></span>
-                            </div>
+                <?php if (!empty($analytics)): ?>
+                <div class="chart-container">
+                    <div class="chart-title">📈 Klik dalam 30 Hari Terakhir</div>
+                    <?php 
+                    $maxClicks = max(array_column($analytics, 'clicks'));
+                    foreach ($analytics as $data): 
+                        $percentage = $maxClicks > 0 ? ($data['clicks'] / $maxClicks) * 100 : 0;
+                    ?>
+                    <div class="chart-bar">
+                        <div class="chart-label"><?= date('d/m', strtotime($data['date'])) ?></div>
+                        <div class="chart-bar-bg">
+                            <div class="chart-bar-fill" style="width: <?= $percentage ?>%"></div>
                         </div>
+                        <div class="chart-value"><?= $data['clicks'] ?></div>
                     </div>
-
-                    <!-- Click Statistics -->
-                    <div class="bg-[var(--darker-peri)] p-6 rounded-xl border border-[var(--glass-border)]">
-                        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
-                            <i class="fas fa-chart-line text-[var(--accent)]"></i>
-                            Statistik Klik
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="text-center">
-                                <div class="text-4xl font-bold text-[var(--accent)] mb-2"><?php echo number_format($foundLink['clicks']); ?></div>
-                                <div class="text-sm opacity-70">Total Klik</div>
-                            </div>
-                            
-                            <?php if ($timeDiff && $timeDiff->days > 0): ?>
-                                <div class="grid grid-cols-2 gap-4 text-center">
-                                    <div>
-                                        <div class="text-lg font-bold text-[var(--success-color)]">
-                                            <?php echo number_format($foundLink['clicks'] / max($timeDiff->days, 1), 1); ?>
-                                        </div>
-                                        <div class="text-xs opacity-70">Klik/Hari</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-lg font-bold text-[var(--light-peri)]">
-                                            <?php echo $timeDiff->days; ?>
-                                        </div>
-                                        <div class="text-xs opacity-70">Hari Aktif</div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-
-                <!-- Performance Indicators -->
-                <div class="bg-[var(--darker-peri)] p-6 rounded-xl border border-[var(--glass-border)] mb-6">
-                    <h3 class="font-bold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-tachometer-alt text-[var(--accent)]"></i>
-                        Indikator Performa
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        
-
-                        
-                        <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
-                            <div class="text-2xl font-bold mb-2 text-[var(--accent)]">
-                                Aktif
-                            </div>
-                            <div class="text-sm opacity-70">Status Link</div>
-                        </div>
-                        
-
-                        
-                        <div class="text-center p-4 bg-[var(--darkest-peri)] rounded-lg">
-                            <div class="text-2xl font-bold mb-2 text-[var(--light-peri)]">
-                                <?php echo $timeDiff ? $timeDiff->days : 0; ?>
-                            </div>
-                            <div class="text-sm opacity-70">Hari Online</div>
-                        </div>
-                    </div>
+                <?php else: ?>
+                <div class="chart-container">
+                    <div class="chart-title">📈 Belum ada data klik dalam 30 hari terakhir</div>
                 </div>
-
-                <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button onclick="window.location.href='https://premiumisme.co/tools/shortlink/'" class="btn btn-secondary flex-1">
-                        <i class="fas fa-arrow-left"></i> Buat Link Baru
-                    </button>
-                    <button onclick="shareStats()" class="btn btn-primary flex-1">
-                        <i class="fas fa-share"></i> Bagikan Stats
-                    </button>
+                <?php endif; ?>
+                
+                <div class="back-link">
+                    <a href="https://premiumisme.co/tools/shortlink">← Kembali ke Shortlink Tool</a>
                 </div>
             </div>
         </div>
-    <?php else: ?>
-        <!-- Not Found Section -->
-        <div class="fade-in">
-            <div class="content-section text-center">
-                <div class="mb-6">
-                    <i class="fas fa-exclamation-triangle text-6xl text-[var(--error-color)] mb-4"></i>
-                    <h2 class="text-2xl font-bold text-white mb-2">❌ Shortlink Tidak Ditemukan</h2>
-                    <p class="opacity-70 mb-2">Link <span class="text-[var(--accent)]"><?php echo htmlspecialchars($slug); ?></span> tidak ditemukan.</p>
-                    <p class="text-sm opacity-60 mb-6">Link mungkin sudah dihapus atau belum dibuat.</p>
-                </div>
-                
-                <div class="bg-[var(--darker-peri)] p-4 rounded-xl border border-[var(--glass-border)] mb-6">
-                    <h3 class="font-bold text-white mb-3">🔍 Tips:</h3>
-                    <ul class="text-sm opacity-70 text-left space-y-1">
-                        <li>• Pastikan URL shortlink sudah benar</li>
-                        <li>• Link mungkin sudah dihapus oleh pemilik</li>
-                        <li>• Coba buat link baru dengan slug yang berbeda</li>
-                    </ul>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="window.location.href='https://premiumisme.co/tools/shortlink/'" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Buat Link Baru
-                    </button>
-                    <button onclick="window.history.back()" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Kembali
-                    </button>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-</div>
-
-<script>
-function copyShortUrl() {
-    const shortUrl = '<?php echo $foundLink ? $foundLink['shortUrl'] : ''; ?>';
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        showToast('Shortlink berhasil disalin!');
-    }).catch(() => {
-        showToast('Gagal menyalin link!', 'error');
-    });
-}
-
-function shareStats() {
-    const statsUrl = window.location.href;
-    const shortUrl = '<?php echo $foundLink ? $foundLink['shortUrl'] : ''; ?>';
-    const clicks = <?php echo $foundLink ? $foundLink['clicks'] : 0; ?>;
-    
-    const shareText = `📊 Statistik Shortlink\n\n🔗 ${shortUrl}\n👆 ${clicks} klik\n📈 Lihat detail: ${statsUrl}`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Statistik Shortlink',
-            text: shareText,
-            url: statsUrl
-        });
-    } else {
-        navigator.clipboard.writeText(shareText).then(() => {
-            showToast('Statistik berhasil disalin!');
-        });
-    }
-}
-
-// Auto-refresh stats every 30 seconds (only if link exists)
-<?php if ($foundLink): ?>
-setInterval(() => {
-    // Only refresh if user is on the page and link exists
-    if (!document.hidden) {
-        location.reload();
-    }
-}, 30000);
-<?php endif; ?>
-
-
-</script>
-
-        </main>
     </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden"></div>
-
-    <script>
-        // Mobile navigation toggle
-        document.getElementById('hamburger-btn').addEventListener('click', function() {
-            document.getElementById('mobile-nav').classList.toggle('active');
-            document.body.classList.toggle('nav-open');
-        });
-
-        // Close mobile nav when clicking outside
-        document.addEventListener('click', function(e) {
-            const mobileNav = document.getElementById('mobile-nav');
-            const hamburgerBtn = document.getElementById('hamburger-btn');
-            
-            if (!mobileNav.contains(e.target) && !hamburgerBtn.contains(e.target)) {
-                mobileNav.classList.remove('active');
-                document.body.classList.remove('nav-open');
-            }
-        });
-
-        // Toast notification function
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast ${type}`;
-            toast.classList.remove('hidden');
-            
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3000);
-        }
-    </script>
 </body>
 </html>

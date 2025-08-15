@@ -12,6 +12,7 @@ include '../includes/header.php';
             <div class="tab-button-group">
                 <button id="tab-manual" class="tab-button active" onclick="switchTab('manual')">Input Manual</button>
                 <button id="tab-file" class="tab-button" onclick="switchTab('file')">Upload File</button>
+                <button id="tab-rar" class="tab-button" onclick="switchTab('rar')">RAR Download</button>
             </div>
 
             <div id="manual-tab" class="tab-content">
@@ -32,6 +33,34 @@ include '../includes/header.php';
                     <input type="file" id="emailFile" class="hidden" accept=".txt" onchange="handleFileSelect(event)">
                 </div>
                 <div id="emailFileInfo" class="mt-3 text-sm opacity-70 hidden"></div>
+            </div>
+
+            <div id="rar-tab" class="tab-content hidden">
+                <div class="bg-[var(--dark-bg)] p-4 rounded-lg border border-[var(--border-color)]">
+                    <h4 class="text-white font-bold mb-3">Konfigurasi RAR Download</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="rarPrefix" class="block text-sm font-medium opacity-80 mb-1">Prefix nama file:</label>
+                            <input type="text" id="rarPrefix" value="fileisme" class="form-input w-full" placeholder="fileisme">
+                        </div>
+                        <div>
+                            <label for="rarExtension" class="block text-sm font-medium opacity-80 mb-1">Ekstensi file:</label>
+                            <select id="rarExtension" class="form-input w-full">
+                                <option value=".rar">.rar</option>
+                                <option value=".zip">.zip</option>
+                                <option value=".7z">.7z</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="rarStartNumber" class="block text-sm font-medium opacity-80 mb-1">Nomor awal:</label>
+                            <input type="number" id="rarStartNumber" value="1" min="1" class="form-input w-full">
+                        </div>
+                        <div class="text-sm opacity-70">
+                            <p>Format output: <span id="rarFormatPreview" class="font-mono text-[var(--light-peri)]">splitisme.rar</span></p>
+                            <p class="text-xs opacity-60 mt-1">Satu file RAR berisi multiple file fileisme-{nomor} di dalamnya</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-6">
@@ -57,6 +86,9 @@ include '../includes/header.php';
                     <button id="downloadAllButton" class="btn btn-primary" onclick="downloadAllResults()" disabled>
                         <i class="fas fa-file-archive"></i> Download Semua (.zip)
                     </button>
+                    <button id="downloadRarButton" class="btn btn-accent" onclick="downloadAllAsRar()" disabled>
+                        <i class="fas fa-file-archive"></i> Download RAR
+                    </button>
                 </div>
             </div>
             <div id="splitResults" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -70,14 +102,25 @@ include '../includes/header.php';
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('emailInput').addEventListener('input', updateLineCount);
+        document.getElementById('rarPrefix').addEventListener('input', updateRarFormatPreview);
+        document.getElementById('rarStartNumber').addEventListener('input', updateRarFormatPreview);
+        document.getElementById('rarExtension').addEventListener('change', updateRarFormatPreview);
         updateLineCount();
+        updateRarFormatPreview();
     });
+
+    function updateRarFormatPreview() {
+        const extension = document.getElementById('rarExtension').value || '.rar';
+        document.getElementById('rarFormatPreview').textContent = `splitisme${extension}`;
+    }
 
     function switchTab(type) {
         document.getElementById('manual-tab').classList.toggle('hidden', type !== 'manual');
-        document.getElementById('file-tab').classList.toggle('hidden', type === 'manual');
+        document.getElementById('file-tab').classList.toggle('hidden', type !== 'file');
+        document.getElementById('rar-tab').classList.toggle('hidden', type !== 'rar');
         document.getElementById('tab-manual').classList.toggle('active', type === 'manual');
-        document.getElementById('tab-file').classList.toggle('active', type !== 'manual');
+        document.getElementById('tab-file').classList.toggle('active', type === 'file');
+        document.getElementById('tab-rar').classList.toggle('active', type === 'rar');
     }
 
     function updateLineCount() {
@@ -161,6 +204,7 @@ include '../includes/header.php';
         const resultsContainer = document.getElementById('splitResults');
         resultsContainer.innerHTML = '';
         document.getElementById('downloadAllButton').disabled = false;
+        document.getElementById('downloadRarButton').disabled = false;
 
         for (let i = 0; i < allLines.length; i += splitSize) {
             const group = allLines.slice(i, i + splitSize);
@@ -205,10 +249,13 @@ include '../includes/header.php';
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `group-${groupIndex + 1}.txt`;
+        const prefix = document.getElementById('rarPrefix').value || 'fileisme';
+        const startNumber = parseInt(document.getElementById('rarStartNumber').value) || 1;
+        const fileNumber = startNumber + groupIndex;
+        a.download = `${prefix}-${fileNumber}`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast(`Grup ${groupIndex + 1} berhasil diunduh`);
+        showToast(`${prefix}-${fileNumber} berhasil diunduh`);
     }
 
     function downloadAllResults() {
@@ -226,6 +273,32 @@ include '../includes/header.php';
             a.click();
             URL.revokeObjectURL(url);
             showToast('Semua grup berhasil diunduh (.zip)!');
+        });
+    }
+
+    function downloadAllAsRar() {
+        const splitSize = parseInt(document.getElementById('splitSize').value);
+        const prefix = document.getElementById('rarPrefix').value || 'fileisme';
+        const startNumber = parseInt(document.getElementById('rarStartNumber').value) || 1;
+        const extension = document.getElementById('rarExtension').value || '.rar';
+        
+        const zip = new JSZip();
+        for (let i = 0; i < allLines.length; i += splitSize) {
+            const group = allLines.slice(i, i + splitSize);
+            const fileNumber = startNumber + Math.floor(i / splitSize);
+            // Nama file di dalam RAR menggunakan format fileisme-{nomor}
+            const fileName = `${prefix}-${fileNumber}`;
+            zip.file(fileName, group.join('\n'));
+        }
+        zip.generateAsync({type:"blob"}).then(content => {
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            // Nama file RAR tetap splitisme.rar
+            a.download = `splitisme${extension}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`File splitisme${extension} berhasil diunduh!`);
         });
     }
 

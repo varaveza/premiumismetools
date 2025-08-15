@@ -1,0 +1,19 @@
+# Protect config folder from web access
+Order Deny,Allow
+Deny from all
+
+# Prevent access to all files in this directory
+<Files "*">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Prevent directory listing
+Options -Indexes
+
+# Additional security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
