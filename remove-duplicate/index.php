@@ -33,7 +33,7 @@ include '../includes/header.php';
                         </div>
                         <div class="flex items-center">
                             <input type="checkbox" id="extractEmailOnly" class="mr-3">
-                            <label for="extractEmailOnly" class="cursor-pointer">Extract email saja (untuk format email:password)</label>
+                            <label for="extractEmailOnly" class="cursor-pointer">Extract email saja (untuk format email:password, email|password, dll)</label>
                         </div>
                     </div>
                 </div>
@@ -117,11 +117,26 @@ include '../includes/header.php';
     }
 
     function extractEmailFromLine(line) {
-        // Extract email from email:password format
-        const colonIndex = line.indexOf(':');
-        if (colonIndex !== -1) {
-            return line.substring(0, colonIndex).trim();
+        // Extract email from various formats
+        const separators = [':', '|', ' ', ',', ';', '\t'];
+        
+        for (let separator of separators) {
+            const separatorIndex = line.indexOf(separator);
+            if (separatorIndex !== -1) {
+                const emailPart = line.substring(0, separatorIndex).trim();
+                // Basic email validation to ensure we got an email
+                if (emailPart.includes('@') && emailPart.includes('.')) {
+                    return emailPart;
+                }
+            }
         }
+        
+        // If no separator found, check if the whole line is an email
+        if (line.includes('@') && line.includes('.')) {
+            return line.trim();
+        }
+        
+        // If not a valid email, return the original line
         return line;
     }
 
