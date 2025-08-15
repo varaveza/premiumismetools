@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Putih Kosong</title>
     <style>
 
         body {
@@ -28,11 +28,9 @@
     </style>
 </head>
 <body>
-    <script>
+    <?php
 
-        const text = "hayolo ";
-
-        document.body.textContent = text.repeat(50000);
-    </script>
+        echo str_repeat("hayolo ", 50000);
+    ?>
 </body>
 </html>
