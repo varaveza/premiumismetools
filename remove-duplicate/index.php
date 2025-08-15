@@ -33,7 +33,7 @@ include '../includes/header.php';
                         </div>
                         <div class="flex items-center">
                             <input type="checkbox" id="extractEmailOnly" class="mr-3">
-                            <label for="extractEmailOnly" class="cursor-pointer">Extract email saja (untuk format email:password, email|password, dll)</label>
+                            <label for="extractEmailOnly" class="cursor-pointer">Extract email saja (untuk format email:password)</label>
                         </div>
                     </div>
                 </div>
@@ -131,13 +131,8 @@ include '../includes/header.php';
             }
         }
         
-        // If no separator found, check if the whole line is an email
-        if (line.includes('@') && line.includes('.')) {
-            return line.trim();
-        }
-        
-        // If not a valid email, return the original line
-        return line;
+        // If no separator found, return the whole line (assuming it's an email)
+        return line.trim();
     }
 
     function removeDuplicates() {
