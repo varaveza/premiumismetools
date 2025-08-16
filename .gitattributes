@@ -1,28 +1,18 @@
 # Set default behavior to automatically normalize line endings
 * text=auto
 
-# Force bash scripts to use LF
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout
+*.php text
+*.html text
+*.css text
+*.js text
+*.json text
+*.md text
+*.txt text
+
+# Declare files that will always have CRLF line endings on checkout
+*.bat text eol=crlf
+
+# Declare files that will always have LF line endings on checkout
 *.sh text eol=lf
-
-# Force PHP files to use LF
-*.php text eol=lf
-
-# Force config files to use LF
-*.conf text eol=lf
-*.cfg text eol=lf
-
-# Force documentation to use LF
-*.md text eol=lf
-*.txt text eol=lf
-
-# Binary files
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.ico binary
-*.svg binary
-*.zip binary
-*.rar binary
-*.7z binary
-*.pdf binary
