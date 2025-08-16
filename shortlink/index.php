@@ -132,6 +132,9 @@ include '../includes/header.php';
                     <button class="btn btn-secondary" onclick="backToInput()">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </button>
+                    <button onclick="copyAllLinks()" class="btn btn-accent">
+                        <i class="fas fa-copy"></i> Copy All Links
+                    </button>
                     <button onclick="downloadBulkResults()" class="btn btn-primary">
                         <i class="fas fa-download"></i> Download CSV
                     </button>
@@ -651,6 +654,41 @@ include '../includes/header.php';
     function testBulkUrl(url) {
         window.open(url, '_blank');
         showToast('Link dibuka di tab baru');
+    }
+
+    function copyAllLinks() {
+        if (bulkResults.length === 0) {
+            showToast('Tidak ada link untuk disalin', 'error');
+            return;
+        }
+
+        // Filter hanya link yang berhasil dibuat
+        const successfulLinks = bulkResults.filter(result => result.status === 'success');
+        
+        if (successfulLinks.length === 0) {
+            showToast('Tidak ada link yang berhasil dibuat', 'error');
+            return;
+        }
+
+        // Buat teks dengan semua shortlink
+        let allLinksText = '';
+        successfulLinks.forEach((result, index) => {
+            allLinksText += `${result.shortUrl}\n`;
+        });
+
+        // Salin ke clipboard
+        navigator.clipboard.writeText(allLinksText.trim()).then(() => {
+            showToast(`${successfulLinks.length} shortlink berhasil disalin!`);
+        }).catch(() => {
+            // Fallback untuk browser yang tidak support clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = allLinksText.trim();
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast(`${successfulLinks.length} shortlink berhasil disalin!`);
+        });
     }
 
     function downloadBulkResults() {
