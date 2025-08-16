@@ -57,7 +57,7 @@ include '../includes/header.php';
                         </div>
                         <div class="text-sm opacity-70">
                             <p>Format output: <span id="rarFormatPreview" class="font-mono text-[var(--light-peri)]">splitisme.rar</span></p>
-                            <p class="text-xs opacity-60 mt-1">Satu file RAR berisi multiple file fileisme-{nomor} di dalamnya</p>
+                            <p class="text-xs opacity-60 mt-1">Satu file RAR berisi multiple file fileisme-{nomor}.txt di dalamnya</p>
                         </div>
                     </div>
                 </div>
@@ -252,10 +252,10 @@ include '../includes/header.php';
         const prefix = document.getElementById('rarPrefix').value || 'fileisme';
         const startNumber = parseInt(document.getElementById('rarStartNumber').value) || 1;
         const fileNumber = startNumber + groupIndex;
-        a.download = `${prefix}-${fileNumber}`;
+        a.download = `${prefix}-${fileNumber}.txt`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast(`${prefix}-${fileNumber} berhasil diunduh`);
+        showToast(`${prefix}-${fileNumber}.txt berhasil diunduh`);
     }
 
     function downloadAllResults() {
@@ -286,8 +286,8 @@ include '../includes/header.php';
         for (let i = 0; i < allLines.length; i += splitSize) {
             const group = allLines.slice(i, i + splitSize);
             const fileNumber = startNumber + Math.floor(i / splitSize);
-            // Nama file di dalam RAR menggunakan format fileisme-{nomor}
-            const fileName = `${prefix}-${fileNumber}`;
+            // Nama file di dalam RAR menggunakan format fileisme-{nomor}.txt
+            const fileName = `${prefix}-${fileNumber}.txt`;
             zip.file(fileName, group.join('\n'));
         }
         zip.generateAsync({type:"blob"}).then(content => {
