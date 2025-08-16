@@ -260,19 +260,25 @@ include '../includes/header.php';
 
     function downloadAllResults() {
         const splitSize = parseInt(document.getElementById('splitSize').value);
+        const prefix = document.getElementById('rarPrefix').value || 'fileisme';
+        const startNumber = parseInt(document.getElementById('rarStartNumber').value) || 1;
         const zip = new JSZip();
         for (let i = 0; i < allLines.length; i += splitSize) {
             const group = allLines.slice(i, i + splitSize);
-            zip.file(`group-${Math.floor(i / splitSize) + 1}.txt`, group.join('\n'));
+            const fileNumber = startNumber + Math.floor(i / splitSize);
+            // Konsisten dengan format RAR: fileisme-{nomor}.txt
+            const fileName = `${prefix}-${fileNumber}.txt`;
+            zip.file(fileName, group.join('\n'));
         }
         zip.generateAsync({type:"blob"}).then(content => {
             const url = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `all-groups.zip`;
+            // Nama file ZIP konsisten dengan RAR: splitisme.zip
+            a.download = `splitisme.zip`;
             a.click();
             URL.revokeObjectURL(url);
-            showToast('Semua grup berhasil diunduh (.zip)!');
+            showToast('File splitisme.zip berhasil diunduh!');
         });
     }
 
