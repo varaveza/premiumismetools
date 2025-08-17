@@ -22,7 +22,7 @@ include '../includes/header.php';
                     </div>
                     <div>
                         <label for="hargaProduk" class="block text-sm font-medium opacity-80 mb-2">Harga Produk (Rp)</label>
-                        <input type="number" id="hargaProduk" placeholder="0" class="form-input" min="0" step="1000">
+                        <input type="number" id="hargaProduk" placeholder="0" class="form-input" min="0" step="0.01">
                     </div>
                 </div>
                 <div class="space-y-4">
@@ -41,83 +41,29 @@ include '../includes/header.php';
                 </div>
             </div>
             <div class="mt-6">
-                <label for="jumlahClaim" class="block text-sm font-medium opacity-80 mb-2">Jumlah Claim Garansi</label>
-                <input type="number" id="jumlahClaim" placeholder="0" class="form-input w-full" min="0" step="1" value="0">
-            </div>
-            <div class="mt-6">
                 <button onclick="hitungRefund()" class="btn btn-primary w-full rounded-full py-3">
                     <i class="fas fa-calculator"></i> Hitung Refund
                 </button>
             </div>
         </div>
+    </div>
 
     <!-- Results Section -->
     <div id="results-section" class="fade-in hidden">
         <div class="content-section">
-            <h2>Hasil Perhitungan Refund</h2>
-            <div class="result-card">
-                <div class="space-y-4">
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Nama Produk:</span>
-                        <span id="resultNamaProduk" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Username:</span>
-                        <span id="resultUsername" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Harga Produk:</span>
-                        <span id="resultHargaProduk" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Tanggal Pembelian:</span>
-                        <span id="resultTanggalPembelian" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Tanggal Kendala:</span>
-                        <span id="resultTanggalKendala" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Masa Aktif:</span>
-                        <span id="resultMasaAktif" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Hari Digunakan:</span>
-                        <span id="resultHariDigunakan" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Sisa Hari:</span>
-                        <span id="resultSisaHari" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Jumlah Claim Garansi:</span>
-                        <span id="resultJumlahClaim" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Biaya Service:</span>
-                        <span id="resultBiayaService" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Proporsi Penggunaan:</span>
-                        <span id="resultProporsi" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Biaya Penggunaan:</span>
-                        <span id="resultBiayaPenggunaan" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Status:</span>
-                        <span id="resultStatus" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="opacity-70">Jumlah Refund:</span>
-                        <span id="resultRefund" class="font-bold"></span>
-                    </div>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h2>Hasil Perhitungan Refund</h2>
+                <div class="flex gap-2">
+                    <button onclick="downloadPDF()" class="btn btn-accent">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button onclick="resetCalculator()" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Hitung Ulang
+                    </button>
                 </div>
             </div>
-            <div class="mt-6 flex gap-4">
-                <button onclick="resetCalculator()" class="btn btn-secondary flex-1">Hitung Ulang</button>
-                <button onclick="copyResults()" class="btn btn-primary flex-1">Salin Hasil</button>
+            <div id="refundResult" class="space-y-4">
+                <!-- Result content will be generated here -->
             </div>
         </div>
     </div>
@@ -131,143 +77,286 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function hitungRefund() {
-    const namaProduk = document.getElementById('namaProduk').value.trim();
-    const username = document.getElementById('username').value.trim();
-    const hargaProduk = parseFloat(document.getElementById('hargaProduk').value);
-    const tanggalPembelian = document.getElementById('tanggalPembelian').value;
-    const tanggalKendala = document.getElementById('tanggalKendala').value;
-    const masaAktif = parseInt(document.getElementById('masaAktif').value);
-    const jumlahClaim = parseInt(document.getElementById('jumlahClaim').value) || 0;
+    try {
+        // Ambil nilai input
+        const namaProduk = document.getElementById('namaProduk').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const hargaProduk = parseFloat(document.getElementById('hargaProduk').value);
+        const tanggalPembelian = document.getElementById('tanggalPembelian').value;
+        const tanggalKendala = document.getElementById('tanggalKendala').value;
+        const masaAktif = parseInt(document.getElementById('masaAktif').value);
 
-    // Validasi input
-    if (!namaProduk || !username || !hargaProduk || !tanggalPembelian || !tanggalKendala || !masaAktif) {
-        showToast('Mohon lengkapi semua data!', 'error');
-        return;
+        // Validasi input
+        if (!namaProduk || !username || !hargaProduk || !tanggalPembelian || !tanggalKendala || !masaAktif) {
+            // Gunakan custom alert/modal jika ada, jika tidak, gunakan alert bawaan
+            if (typeof showToast === 'function') {
+                showToast('Mohon lengkapi semua data!', 'error');
+            } else {
+                alert('Mohon lengkapi semua data!');
+            }
+            return;
+        }
+
+        if (hargaProduk <= 0 || masaAktif <= 0) {
+            alert('Harga produk dan masa aktif harus lebih dari 0!');
+            return;
+        }
+
+        // Hitung hari yang digunakan
+        const pembelian = new Date(tanggalPembelian);
+        const kendala = new Date(tanggalKendala);
+        
+        if (kendala < pembelian) {
+            alert('Tanggal kendala tidak boleh lebih awal dari tanggal pembelian!');
+            return;
+        }
+
+        const MS_PER_DAY = 1000 * 60 * 60 * 24;
+        const rawDaysUsed = Math.floor((kendala - pembelian) / MS_PER_DAY) + 1;
+        const hariDigunakan = Math.max(0, Math.min(masaAktif, rawDaysUsed));
+        
+        // Hitung proporsi penggunaan dan refund
+        const usageProportion = Math.min(1, Math.max(0, hariDigunakan / masaAktif));
+        const biayaPenggunaan = parseFloat((usageProportion * hargaProduk).toFixed(2));
+        const refundAmount = parseFloat(Math.max(0, hargaProduk - biayaPenggunaan).toFixed(2));
+
+        // Data untuk display
+        const refundData = {
+            id: Date.now(),
+            namaProduk: namaProduk,
+            username: username,
+            hargaProduk: hargaProduk,
+            tanggalPembelian: tanggalPembelian,
+            tanggalKendala: tanggalKendala,
+            masaAktif: masaAktif,
+            hariDigunakan: hariDigunakan,
+            biayaPenggunaan: biayaPenggunaan,
+            refundAmount: refundAmount,
+            timestamp: new Date().toLocaleString('id-ID')
+        };
+
+        // Tampilkan hasil
+        displayRefundResult(refundData);
+        document.getElementById('main-section').classList.add('hidden');
+        document.getElementById('results-section').classList.remove('hidden');
+        
+        if (typeof showToast === 'function') {
+            showToast('Refund berhasil dihitung!');
+        }
+        
+    } catch (error) {
+        console.error('Error dalam perhitungan refund:', error);
+        alert('Terjadi kesalahan dalam perhitungan. Silakan coba lagi.');
     }
-
-    if (hargaProduk <= 0 || masaAktif <= 0) {
-        showToast('Harga produk dan masa aktif harus lebih dari 0!', 'error');
-        return;
-    }
-
-    // Hitung hari yang digunakan
-    const pembelian = new Date(tanggalPembelian);
-    const kendala = new Date(tanggalKendala);
-    const selisihWaktu = kendala.getTime() - pembelian.getTime();
-    const hariDigunakan = Math.ceil(selisihWaktu / (1000 * 3600 * 24));
-
-    if (hariDigunakan < 0) {
-        showToast('Tanggal kendala tidak boleh sebelum tanggal pembelian!', 'error');
-        return;
-    }
-
-    // Hitung sisa hari
-    const sisaHari = Math.max(0, masaAktif - hariDigunakan);
-
-    // Tentukan biaya service berdasarkan jumlah claim garansi
-    let biayaService;
-    if (hariDigunakan < 7) {
-        biayaService = 0.8; // Pemakaian kurang dari 1 minggu
-    } else if (jumlahClaim === 0) {
-        biayaService = 0.7; // Belum pernah claim garansi tapi sudah lebih dari seminggu
-    } else if (jumlahClaim >= 1 && jumlahClaim <= 2) {
-        biayaService = 0.6; // Sudah pernah claim garansi 1-2x
-    } else if (jumlahClaim === 3) {
-        biayaService = 0.5; // Sudah pernah claim garansi 3x
-    } else {
-        biayaService = 0.4; // Sudah pernah claim garansi > 3x
-    }
-
-    // Hitung refund menggunakan rumus: (harga × sisa hari : durasi) × biaya service
-    const proporsiSisa = sisaHari / masaAktif;
-    const refundSebelumService = hargaProduk * proporsiSisa;
-    const refund = refundSebelumService * biayaService;
-
-    // Tentukan status
-    let status, statusColor;
-    if (refund > 0) {
-        status = 'Berhak Refund';
-        statusColor = 'var(--success-color)';
-    } else if (refund < 0) {
-        status = 'Kurang Bayar';
-        statusColor = 'var(--error-color)';
-    } else {
-        status = 'Sudah Pas';
-        statusColor = 'var(--accent)';
-    }
-
-    // Format currency
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(amount);
-    };
-
-    // Update hasil
-    document.getElementById('resultNamaProduk').textContent = namaProduk;
-    document.getElementById('resultUsername').textContent = username;
-    document.getElementById('resultHargaProduk').textContent = formatCurrency(hargaProduk);
-    document.getElementById('resultTanggalPembelian').textContent = new Date(tanggalPembelian).toLocaleDateString('id-ID');
-    document.getElementById('resultTanggalKendala').textContent = new Date(tanggalKendala).toLocaleDateString('id-ID');
-    document.getElementById('resultMasaAktif').textContent = masaAktif + ' hari';
-    document.getElementById('resultHariDigunakan').textContent = hariDigunakan + ' hari';
-    document.getElementById('resultSisaHari').textContent = sisaHari + ' hari';
-    document.getElementById('resultJumlahClaim').textContent = jumlahClaim + ' kali';
-    document.getElementById('resultBiayaService').textContent = (biayaService * 100) + '%';
-    document.getElementById('resultProporsi').textContent = (proporsiSisa * 100).toFixed(1) + '%';
-    document.getElementById('resultBiayaPenggunaan').textContent = formatCurrency(hargaProduk - refundSebelumService);
-    document.getElementById('resultStatus').textContent = status;
-    document.getElementById('resultStatus').style.color = statusColor;
-    document.getElementById('resultRefund').textContent = formatCurrency(refund);
-    document.getElementById('resultRefund').style.color = statusColor;
-
-    // Tampilkan hasil
-    document.getElementById('main-section').classList.add('hidden');
-    document.getElementById('results-section').classList.remove('hidden');
-    
-    showToast('Perhitungan refund berhasil!');
 }
+
+function displayRefundResult(data) {
+    const resultDiv = document.getElementById('refundResult');
+    // Mengubah tampilan hasil agar sesuai dengan tema gelap
+    resultDiv.innerHTML = `
+        <div class="result-card">
+            <div class="result-header mb-4 pb-2 border-b border-gray-600">
+                <h3 class="text-xl font-bold text-white">Kalkulasi Refund Produk</h3>
+                <p class="text-sm opacity-70">No. Refund #${data.id.toString().slice(-6)}</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-4">
+                <div class="results-column">
+                    <h4 class="section-title">Informasi Produk</h4>
+                    <div class="info-item"><span class="info-label">Nama Produk:</span> <span class="info-value">${data.namaProduk.toUpperCase()}</span></div>
+                    <div class="info-item"><span class="info-label">Customer:</span> <span class="info-value">${data.username.toUpperCase()}</span></div>
+                    <div class="info-item"><span class="info-label">Harga Produk:</span> <span class="info-value">Rp ${data.hargaProduk.toLocaleString('id-ID')}</span></div>
+                </div>
+
+                <div class="results-column">
+                    <h4 class="section-title">Informasi Waktu</h4>
+                    <div class="info-item"><span class="info-label">Tanggal Order:</span> <span class="info-value">${formatDate(data.tanggalPembelian)}</span></div>
+                    <div class="info-item"><span class="info-label">Tanggal Kendala:</span> <span class="info-value">${formatDate(data.tanggalKendala)}</span></div>
+                    <div class="info-item"><span class="info-label">Masa Aktif:</span> <span class="info-value">${data.masaAktif} hari</span></div>
+                </div>
+            </div>
+
+            <div class="calculation-breakdown">
+                <h4 class="section-title">Kalkulasi Penggunaan</h4>
+                <div class="info-item"><span class="info-label">Hari Digunakan:</span> <span class="info-value">${data.hariDigunakan} hari</span></div>
+                <div class="info-item"><span class="info-label">Biaya Penggunaan:</span> <span class="info-value">Rp ${data.biayaPenggunaan.toLocaleString('id-ID', {maximumFractionDigits: 2})}</span></div>
+            </div>
+
+            <div class="final-result">
+                <div class="final-result-label">TOTAL REFUND</div>
+                <div class="final-result-amount">Rp ${data.refundAmount.toLocaleString('id-ID', {maximumFractionDigits: 2})}</div>
+            </div>
+        </div>
+    `;
+}
+
 
 function resetCalculator() {
-    document.getElementById('namaProduk').value = '';
-    document.getElementById('username').value = '';
-    document.getElementById('hargaProduk').value = '';
-    document.getElementById('tanggalPembelian').value = '';
-    document.getElementById('masaAktif').value = '';
-    document.getElementById('jumlahClaim').value = '0';
-    
-    // Reset tanggal kendala ke hari ini
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('tanggalKendala').value = today;
-    
-    document.getElementById('main-section').classList.remove('hidden');
-    document.getElementById('results-section').classList.add('hidden');
+    try {
+        document.getElementById('namaProduk').value = '';
+        document.getElementById('username').value = '';
+        document.getElementById('hargaProduk').value = '';
+        document.getElementById('tanggalPembelian').value = '';
+        document.getElementById('masaAktif').value = '';
+        
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('tanggalKendala').value = today;
+        
+        document.getElementById('main-section').classList.remove('hidden');
+        document.getElementById('results-section').classList.add('hidden');
+    } catch (error) {
+        console.error('Error dalam reset calculator:', error);
+        alert('Terjadi kesalahan saat mereset kalkulator.');
+    }
 }
 
-function copyResults() {
-    const results = `Hasil Perhitungan Refund:
-Nama Produk: ${document.getElementById('resultNamaProduk').textContent}
-Username: ${document.getElementById('resultUsername').textContent}
-Harga Produk: ${document.getElementById('resultHargaProduk').textContent}
-Tanggal Pembelian: ${document.getElementById('resultTanggalPembelian').textContent}
-Tanggal Kendala: ${document.getElementById('resultTanggalKendala').textContent}
-Masa Aktif: ${document.getElementById('resultMasaAktif').textContent}
-Hari Digunakan: ${document.getElementById('resultHariDigunakan').textContent}
-Sisa Hari: ${document.getElementById('resultSisaHari').textContent}
-Jumlah Claim Garansi: ${document.getElementById('resultJumlahClaim').textContent}
-Biaya Service: ${document.getElementById('resultBiayaService').textContent}
-Proporsi Penggunaan: ${document.getElementById('resultProporsi').textContent}
-Biaya Penggunaan: ${document.getElementById('resultBiayaPenggunaan').textContent}
-Status: ${document.getElementById('resultStatus').textContent}
-Jumlah Refund: ${document.getElementById('resultRefund').textContent}`;
+function downloadPDF() {
+    try {
+        if (typeof window.html2pdf === 'undefined') {
+            alert('Library PDF (html2pdf) tidak ditemukan. Gagal membuat PDF.');
+            return;
+        }
 
-    navigator.clipboard.writeText(results).then(() => {
-        showToast('Hasil perhitungan berhasil disalin!');
-    }).catch(() => {
-        showToast('Gagal menyalin hasil!', 'error');
+        const resultCard = document.querySelector('#refundResult .result-card');
+        if (!resultCard) {
+            alert('Tidak ada data untuk diunduh. Silakan hitung refund terlebih dahulu.');
+            return;
+        }
+        
+        generatePDFWithHtml2Pdf(resultCard);
+        
+    } catch (error) {
+        console.error('Error dalam download PDF:', error);
+        alert('Terjadi kesalahan saat membuat PDF. Silakan coba lagi.');
+    }
+}
+
+// Fungsi untuk generate PDF menggunakan html2pdf dengan template yang konsisten
+function generatePDFWithHtml2Pdf(resultCard) {
+    const opt = {
+        margin:       0.5,
+        filename:     `refund-premiumisme-${Date.now()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    const currentDate = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
+    
+    // Fungsi helper untuk mengambil teks dari elemen di dalam resultCard
+    const getElementText = (selector, isFinalResult = false) => {
+        const element = resultCard.querySelector(selector);
+        if (!element) return 'N/A';
+        if (isFinalResult) return element.textContent.trim();
+        // Mengambil bagian terakhir setelah ':' dan membersihkan spasi
+        return element.textContent.split(':').pop().trim();
+    };
+    
+    // Mengambil semua data yang dibutuhkan dari resultCard
+    const namaProduk = getElementText('.grid > div:nth-child(1) > div:nth-child(1) .font-semibold');
+    const customer = getElementText('.grid > div:nth-child(1) > div:nth-child(2) .font-semibold');
+    const hargaProduk = getElementText('.grid > div:nth-child(1) > div:nth-child(3) .font-semibold');
+    const tanggalOrder = getElementText('.grid > div:nth-child(2) > div:nth-child(1) .font-semibold');
+    const tanggalKendala = getElementText('.grid > div:nth-child(2) > div:nth-child(2) .font-semibold');
+    const masaAktif = getElementText('.grid > div:nth-child(2) > div:nth-child(3) .font-semibold');
+    const hariDigunakan = getElementText('.p-4.bg-gray-700.rounded-md.mb-4 > div:nth-child(2) .font-semibold');
+    const biayaPenggunaan = getElementText('.p-4.bg-gray-700.rounded-md.mb-4 > div:nth-child(3) .font-semibold');
+    const totalRefund = getElementText('.final-result .font-bold', true);
+    const refundNumber = getElementText('.text-sm.text-gray-400', true);
+
+    // Membuat konten HTML untuk PDF menggunakan template yang sama persis dengan file refund.html
+    const htmlContentForPdf = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Dokumen Refund - Premiumisme Tools</title>
+            <!-- Menggunakan inline CSS untuk kompatibilitas PDF terbaik -->
+            <style>
+                body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #333; margin: 0; padding: 20px; }
+                .container { max-width: 800px; margin: 0 auto; background: #f8f9fa; border-radius: 12px; overflow: hidden; border: 1px solid #e0e0e0; }
+                .header { background: linear-gradient(135deg, #7A6EB7 0%, #5B5C9A 100%); color: white; padding: 20px; text-align: center; }
+                .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+                .header p { margin: 5px 0 0 0; opacity: 0.9; }
+                .content { padding: 20px; }
+                .result-card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+                .result-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .product-name { margin: 0 0 5px 0; color: #5B5C9A; font-size: 18px; font-weight: bold; }
+                .username-text { margin: 0; color: #666; font-size: 14px; }
+                .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                .results-column { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0; }
+                .section-title { margin: 0 0 15px 0; color: #7A6EB7; font-size: 16px; font-weight: bold; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; }
+                .info-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+                .info-label { color: #666; font-weight: 500; }
+                .info-value { font-weight: bold; color: #333; text-align: right; }
+                .calculation-breakdown { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px; }
+                .final-result { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+                .final-result-label { font-size: 14px; opacity: 0.9; margin-bottom: 5px; }
+                .final-result-amount { font-size: 28px; font-weight: bold; }
+                .footer { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>DOKUMEN REFUND</h1>
+                    <p>Premiumisme Tools</p>
+                </div>
+                <div class="content">
+                    <div class="result-card">
+                        <div class="result-header">
+                            <h3 class="product-name">Kalkulasi Refund Produk</h3>
+                            <p class="username-text">${refundNumber}</p>
+                        </div>
+                        <div class="results-grid">
+                            <div class="results-column">
+                                <h4 class="section-title">Informasi Produk</h4>
+                                <div class="info-item"><span class="info-label">Nama Produk</span><span class="info-value">${namaProduk}</span></div>
+                                <div class="info-item"><span class="info-label">Customer</span><span class="info-value">${customer}</span></div>
+                                <div class="info-item"><span class="info-label">Harga Produk</span><span class="info-value">${hargaProduk}</span></div>
+                            </div>
+                            <div class="results-column">
+                                <h4 class="section-title">Informasi Waktu</h4>
+                                <div class="info-item"><span class="info-label">Tanggal Order</span><span class="info-value">${tanggalOrder}</span></div>
+                                <div class="info-item"><span class="info-label">Tanggal Kendala</span><span class="info-value">${tanggalKendala}</span></div>
+                                <div class="info-item"><span class="info-label">Masa Aktif</span><span class="info-value">${masaAktif}</span></div>
+                            </div>
+                        </div>
+                        <div class="calculation-breakdown">
+                            <h4 class="section-title">Kalkulasi Penggunaan</h4>
+                            <div class="info-item"><span class="info-label">Hari Digunakan</span><span class="info-value">${hariDigunakan}</span></div>
+                            <div class="info-item"><span class="info-label">Biaya Penggunaan</span><span class="info-value">${biayaPenggunaan}</span></div>
+                        </div>
+                        <div class="final-result">
+                            <div class="final-result-label">TOTAL REFUND</div>
+                            <div class="final-result-amount">${totalRefund}</div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>Dokumen ini dibuat secara otomatis oleh Premiumisme Tools</p>
+                        <p>Tanggal: ${currentDate}</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Generate PDF dari konten HTML yang sudah dibuat
+    html2pdf().set(opt).from(htmlContentForPdf).save().then(() => {
+        if (typeof showToast === 'function') {
+            showToast('PDF berhasil diunduh!');
+        } else {
+            alert('PDF berhasil diunduh!');
+        }
+    }).catch(error => {
+        console.error('Error saat membuat PDF dengan html2pdf:', error);
+        alert('Gagal membuat PDF.');
     });
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 </script>
 
