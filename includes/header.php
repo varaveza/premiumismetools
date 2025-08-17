@@ -18,6 +18,23 @@
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        // Ensure PDF libraries are loaded
+        window.addEventListener('load', function() {
+            if (typeof window.html2pdf === 'undefined') {
+                console.warn('html2pdf not loaded, attempting to load...');
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                script.onload = function() {
+                    console.log('html2pdf loaded successfully on window load');
+                };
+                script.onerror = function() {
+                    console.error('Failed to load html2pdf on window load');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="bg-animation">

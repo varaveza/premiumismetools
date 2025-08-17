@@ -135,6 +135,9 @@ function hitungRefund() {
             timestamp: new Date().toLocaleString('id-ID')
         };
 
+        // Simpan data ke global variable untuk fallback PDF
+        window.lastRefundData = refundData;
+        
         // Tampilkan hasil
         displayRefundResult(refundData);
         document.getElementById('main-section').classList.add('hidden');
@@ -212,27 +215,45 @@ function resetCalculator() {
 
 function downloadPDF() {
     try {
+        // Check if html2pdf library is loaded
         if (typeof window.html2pdf === 'undefined') {
-            alert('Library PDF (html2pdf) tidak ditemukan. Gagal membuat PDF.');
+            console.error('html2pdf library not found, trying to load it...');
+            
+            // Try to load html2pdf dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = function() {
+                console.log('html2pdf loaded successfully');
+                setTimeout(() => downloadPDF(), 100);
+            };
+            script.onerror = function() {
+                alert('Gagal memuat library PDF. Silakan refresh halaman dan coba lagi.');
+            };
+            document.head.appendChild(script);
             return;
         }
 
-        const resultCard = document.querySelector('#refundResult .result-card');
-        if (!resultCard) {
+        // Check if we have refund data
+        if (!window.lastRefundData) {
             alert('Tidak ada data untuk diunduh. Silakan hitung refund terlebih dahulu.');
             return;
         }
         
-        generatePDFWithHtml2Pdf(resultCard);
+        // Show loading indicator
+        if (typeof showToast === 'function') {
+            showToast('Membuat PDF...', 'info');
+        }
+        
+        generatePDFWithData(window.lastRefundData);
         
     } catch (error) {
         console.error('Error dalam download PDF:', error);
-        alert('Terjadi kesalahan saat membuat PDF. Silakan coba lagi.');
+        alert('Terjadi kesalahan saat membuat PDF. Silakan coba lagi. Error: ' + error.message);
     }
 }
 
-// Fungsi untuk generate PDF menggunakan html2pdf dengan template yang konsisten
-function generatePDFWithHtml2Pdf(resultCard) {
+// Fungsi untuk generate PDF menggunakan data langsung (lebih reliable)
+function generatePDFWithData(data) {
     const opt = {
         margin:       0.5,
         filename:     `refund-premiumisme-${Date.now()}.pdf`,
@@ -243,26 +264,30 @@ function generatePDFWithHtml2Pdf(resultCard) {
 
     const currentDate = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
     
-    // Fungsi helper untuk mengambil teks dari elemen di dalam resultCard
-    const getElementText = (selector, isFinalResult = false) => {
-        const element = resultCard.querySelector(selector);
-        if (!element) return 'N/A';
-        if (isFinalResult) return element.textContent.trim();
-        // Mengambil bagian terakhir setelah ':' dan membersihkan spasi
-        return element.textContent.split(':').pop().trim();
-    };
+    // Menggunakan data langsung dari variabel (lebih reliable)
+    const namaProduk = data.namaProduk.toUpperCase();
+    const customer = data.username.toUpperCase();
+    const hargaProduk = 'Rp ' + data.hargaProduk.toLocaleString('id-ID');
+    const tanggalOrder = formatDate(data.tanggalPembelian);
+    const tanggalKendala = formatDate(data.tanggalKendala);
+    const masaAktif = data.masaAktif + ' hari';
+    const hariDigunakan = data.hariDigunakan + ' hari';
+    const biayaPenggunaan = 'Rp ' + data.biayaPenggunaan.toLocaleString('id-ID', {maximumFractionDigits: 2});
+    const totalRefund = 'Rp ' + data.refundAmount.toLocaleString('id-ID', {maximumFractionDigits: 2});
+    const refundNumber = 'No. Refund #' + data.id.toString().slice(-6);
     
-    // Mengambil semua data yang dibutuhkan dari resultCard
-    const namaProduk = getElementText('.grid > div:nth-child(1) > div:nth-child(1) .font-semibold');
-    const customer = getElementText('.grid > div:nth-child(1) > div:nth-child(2) .font-semibold');
-    const hargaProduk = getElementText('.grid > div:nth-child(1) > div:nth-child(3) .font-semibold');
-    const tanggalOrder = getElementText('.grid > div:nth-child(2) > div:nth-child(1) .font-semibold');
-    const tanggalKendala = getElementText('.grid > div:nth-child(2) > div:nth-child(2) .font-semibold');
-    const masaAktif = getElementText('.grid > div:nth-child(2) > div:nth-child(3) .font-semibold');
-    const hariDigunakan = getElementText('.p-4.bg-gray-700.rounded-md.mb-4 > div:nth-child(2) .font-semibold');
-    const biayaPenggunaan = getElementText('.p-4.bg-gray-700.rounded-md.mb-4 > div:nth-child(3) .font-semibold');
-    const totalRefund = getElementText('.final-result .font-bold', true);
-    const refundNumber = getElementText('.text-sm.text-gray-400', true);
+    console.log('Using direct data for PDF:', {
+        namaProduk,
+        customer,
+        hargaProduk,
+        tanggalOrder,
+        tanggalKendala,
+        masaAktif,
+        hariDigunakan,
+        biayaPenggunaan,
+        totalRefund,
+        refundNumber
+    });
 
     // Membuat konten HTML untuk PDF menggunakan template yang sama persis dengan file refund.html
     const htmlContentForPdf = `
@@ -350,7 +375,45 @@ function generatePDFWithHtml2Pdf(resultCard) {
         }
     }).catch(error => {
         console.error('Error saat membuat PDF dengan html2pdf:', error);
-        alert('Gagal membuat PDF.');
+        
+        // Fallback: try alternative method
+        try {
+            console.log('Trying alternative PDF generation method...');
+            
+            // Create a temporary element to render the content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContentForPdf;
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
+            
+            // Try to generate PDF from the temporary element
+            html2pdf().set({
+                ...opt,
+                html2canvas: { 
+                    scale: 1.5, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    allowTaint: true,
+                    foreignObjectRendering: true
+                }
+            }).from(tempDiv).save().then(() => {
+                if (typeof showToast === 'function') {
+                    showToast('PDF berhasil diunduh!');
+                } else {
+                    alert('PDF berhasil diunduh!');
+                }
+            }).catch(fallbackError => {
+                console.error('Fallback PDF generation also failed:', fallbackError);
+                alert('Gagal membuat PDF. Silakan coba refresh halaman dan coba lagi.');
+            }).finally(() => {
+                document.body.removeChild(tempDiv);
+            });
+            
+        } catch (fallbackError) {
+            console.error('Fallback method failed:', fallbackError);
+            alert('Gagal membuat PDF. Silakan coba refresh halaman dan coba lagi.');
+        }
     });
 }
 
