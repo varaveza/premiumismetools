@@ -66,6 +66,11 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stats - <?= htmlspecialchars($slug) ?> | Shortisme</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="shortcut icon" href="../favicon.png">
+    <link rel="apple-touch-icon" href="../favicon.png">
     <link rel="stylesheet" href="https://premiumisme.co/tools/assets/css/style.css">
     <style>
         /* Custom styles for stats page */

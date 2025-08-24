@@ -8,7 +8,7 @@ $current_page = 'gsuite';
 <div class="content-wrapper">
     <div id="main-section" class="fade-in">
         <div class="content-section">
-            <div class="mb-6">
+            <div class="mb-4">
                 <h2 class="text-2xl font-bold text-white">GSuite Creator</h2>
             </div>
             
