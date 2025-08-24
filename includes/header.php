@@ -63,7 +63,7 @@
             <!-- Desktop Navigation -->
             <nav class="desktop-nav">
                 <a href="../generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                <a href="../gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Generator</a>
+                <a href="../gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
                 <a href="../refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
                 <a href="../split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                 <a href="../remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
@@ -74,7 +74,7 @@
             <div id="mobile-nav" class="mobile-nav">
                 <div class="mobile-nav-content">
                     <a href="../generator-email/" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                    <a href="../gsuite/" class="mobile-nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Generator</a>
+                    <a href="../gsuite/" class="mobile-nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
                     <a href="../refund-calculator/" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
                     <a href="../split-mail/" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                     <a href="../remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>

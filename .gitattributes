@@ -16,3 +16,4 @@
 
 # Declare files that will always have LF line endings on checkout
 *.sh text eol=lf
+* text=auto eol=lf

@@ -8,13 +8,8 @@ $current_page = 'gsuite';
 <div class="content-wrapper">
     <div id="main-section" class="fade-in">
         <div class="content-section">
-            <div class="flex items-center mb-6">
-                <div class="w-12 h-12 bg-[var(--accent)] bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
-                    <i class="fas fa-user-plus text-[var(--accent)] text-xl"></i>
-                </div>
-                <div>
-                    <h2 class="text-2xl font-bold text-white">Gsuite Generator</h2>
-                </div>
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-white">GSuite Creator</h2>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -24,7 +19,7 @@ $current_page = 'gsuite';
                     <input 
                         type="text" 
                         id="firstName" 
-                        placeholder="Contoh: Terakhir"
+                        placeholder="Contoh: Apps"
                         class="form-input"
                     >
                 </div>
@@ -75,7 +70,7 @@ $current_page = 'gsuite';
                             <input 
                                 type="text" 
                                 id="usernamePrefix" 
-                                placeholder="Prefix username (contoh: sayamau)"
+                                placeholder="Prefix (contoh: premiumisme)"
                                 class="form-input"
                             >
                         </div>
@@ -99,7 +94,7 @@ $current_page = 'gsuite';
                     <input 
                         type="text" 
                         id="domain" 
-                        placeholder="Contoh: canvaisme.id"
+                        placeholder="Contoh: premiumisme.co"
                         class="form-input"
                     >
                 </div>
@@ -123,7 +118,7 @@ $current_page = 'gsuite';
                     <input 
                         type="text" 
                         id="password" 
-                        placeholder="Contoh: password123"
+                        placeholder="Contoh: masuk123"
                         class="form-input"
                     >
                 </div>
@@ -412,7 +407,7 @@ function displayResults() {
                             <div><span class="opacity-70">Password:</span> <span class="font-semibold">${data.password}</span></div>
                         </div>
                     </div>
-                    <button onclick="copySingleData(${index})" class="text-[var(--accent)] hover:text-[var(--light-peri)] text-sm ml-4">
+                    <button onclick="copySingleData(${index})" class="text-[var(--accent)] hover:text-[var(--light-peri)] text-sm ml-4" title="Copy Email & Password">
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
@@ -432,16 +427,16 @@ function displayResults() {
 
 function copySingleData(index) {
     const data = generatedData[index];
-    const dataText = `${data.firstName},${data.lastName},${data.email},${data.password}`;
+    const dataText = `${data.email}|${data.password}`;
     navigator.clipboard.writeText(dataText).then(() => {
-        showToast(`Data ${index + 1} berhasil dicopy`);
+        showToast(`Email & Password ${index + 1} berhasil dicopy`);
     });
 }
 
 function copyData() {
-    const csvContent = generateCSV();
-    navigator.clipboard.writeText(csvContent).then(() => {
-        showToast(`${generatedData.length} data berhasil dicopy ke clipboard`);
+    const emailPasswordData = generatedData.map(data => `${data.email}|${data.password}`).join('\n');
+    navigator.clipboard.writeText(emailPasswordData).then(() => {
+        showToast(`${generatedData.length} Email & Password berhasil dicopy ke clipboard`);
     });
 }
 
