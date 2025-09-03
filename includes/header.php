@@ -1,3 +1,4 @@
+<?php $base_prefix = isset($base_prefix) ? $base_prefix : '../'; ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,14 +7,14 @@
     <title><?php echo isset($page_title) ? htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8') : 'Premiumisme Tools'; ?></title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../favicon.png">
-    <link rel="shortcut icon" href="../favicon.png">
-    <link rel="apple-touch-icon" href="../favicon.png">
+    <link rel="icon" type="image/png" href="<?php echo $base_prefix; ?>favicon.png">
+    <link rel="shortcut icon" href="<?php echo $base_prefix; ?>favicon.png">
+    <link rel="apple-touch-icon" href="<?php echo $base_prefix; ?>favicon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo $base_prefix; ?>assets/css/style.css">
     
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -57,28 +58,30 @@
 
             <!-- Logo Section -->
             <div class="logo-section">
-                <img src="../logo.svg" alt="Premiumisme Logo" class="logo">
+                <img src="<?php echo $base_prefix; ?>logo.svg" alt="Premiumisme Logo" class="logo">
             </div>
 
             <!-- Desktop Navigation -->
             <nav class="desktop-nav">
-                <a href="../generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                <a href="../gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
-                <a href="../refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                <a href="../split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                <a href="../remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                <a href="../shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
+                <a href="<?php echo $base_prefix; ?>refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
+                <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
+                <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
+                <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
             </nav>
 
             <!-- Mobile Navigation Overlay -->
             <div id="mobile-nav" class="mobile-nav">
                 <div class="mobile-nav-content">
-                    <a href="../generator-email/" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                    <a href="../gsuite/" class="mobile-nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
-                    <a href="../refund-calculator/" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                    <a href="../split-mail/" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                    <a href="../remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                    <a href="../shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                    <a href="<?php echo $base_prefix; ?>generator-email/" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                    <a href="<?php echo $base_prefix; ?>gsuite/" class="mobile-nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
+                    <a href="<?php echo $base_prefix; ?>refund-calculator/" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
+                    <a href="<?php echo $base_prefix; ?>split-mail/" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
+                    <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
+                    <a href="<?php echo $base_prefix; ?>shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                    <a href="<?php echo $base_prefix; ?>spotify-creator/" class="mobile-nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
                 </div>
             </div>
         </header>

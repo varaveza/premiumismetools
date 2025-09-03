@@ -1,6 +1,79 @@
 <?php
 $page_title = 'GSuite Auto Create - Premiumisme';
 $current_page = 'gsuite';
+
+// Minimal backend to persist unique letter tokens across requests
+if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    try {
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true);
+        if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid payload']);
+            exit;
+        }
+
+        $dbPath = __DIR__ . '/gsuite_unique.db';
+        $pdo = new PDO('sqlite:' . $dbPath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec("CREATE TABLE IF NOT EXISTS used_letter_tokens (token TEXT PRIMARY KEY)");
+
+        $resultUsernames = [];
+        foreach ($data['items'] as $item) {
+            $original = (string)($item['username'] ?? '');
+            if ($original === '') {
+                $resultUsernames[] = '';
+                continue;
+            }
+
+            // Extract letters and digits using simple regex: letters first then digits optional
+            if (preg_match('/^([a-zA-Z]+)(\d*)$/', $original, $m)) {
+                $letters = strtolower($m[1]);
+                $digits = $m[2] ?? '';
+            } else {
+                // Fallback: keep only letters for token, preserve any trailing digits
+                $letters = strtolower(preg_replace('/[^a-zA-Z]/', '', $original));
+                $digitsMatch = [];
+                preg_match('/(\d+)$/', $original, $digitsMatch);
+                $digits = $digitsMatch[1] ?? '';
+            }
+
+            $len = max(1, strlen($letters));
+
+            // Try to reserve current token, otherwise generate a new unique token with same length
+            $token = $letters;
+            $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token) VALUES (?)');
+            $attempts = 0;
+            while (true) {
+                $attempts++;
+                $stmt->execute([$token]);
+                if ($stmt->rowCount() === 1) {
+                    // Reserved successfully
+                    break;
+                }
+                // Collision: generate a new token with same length
+                $token = '';
+                for ($i = 0; $i < $len; $i++) {
+                    $token .= chr(ord('a') + random_int(0, 25));
+                }
+                if ($attempts > 1000) { // safety
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'error' => 'Too many collisions']);
+                    exit;
+                }
+            }
+
+            $resultUsernames[] = $token . $digits;
+        }
+
+        echo json_encode(['success' => true, 'usernames' => $resultUsernames]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -376,11 +449,26 @@ function generateData() {
         });
     }
 
-    displayResults();
-    
-    document.getElementById('main-section').classList.add('hidden');
-    document.getElementById('result-section').classList.remove('hidden');
-    showToast(`${generatedData.length} data berhasil dibuat!`);
+    // Reserve unique letter tokens server-side so future runs avoid duplicates
+    const payload = { items: generatedData.map(d => ({ username: d.email.split('@')[0] })) };
+    fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(r => r.json())
+        .then(res => {
+            if (res && res.success && Array.isArray(res.usernames)) {
+                const domainFinal = document.getElementById('domain').value.trim();
+                generatedData = generatedData.map((d, idx) => ({ ...d, email: `${res.usernames[idx]}@${domainFinal}` }));
+            }
+            displayResults();
+            document.getElementById('main-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            showToast(`${generatedData.length} data berhasil dibuat!`);
+        })
+        .catch(() => {
+            displayResults();
+            document.getElementById('main-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            showToast(`${generatedData.length} data berhasil dibuat!`);
+        });
 }
 
 function displayResults() {
