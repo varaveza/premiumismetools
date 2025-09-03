@@ -97,6 +97,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result['display_password'] = $password;
             } else {
                 $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
+                // Add debug info
+                $result['debug'] = [
+                    'command' => $cmd,
+                    'output' => $output,
+                    'json_error' => json_last_error_msg(),
+                    'python_path' => trim(shell_exec('which python 2>&1') ?: 'not found'),
+                    'cli_exists' => file_exists(__DIR__ . '/py/cli_create.py') ? 'yes' : 'no'
+                ];
             }
         }
     }
@@ -175,20 +183,27 @@ include '../includes/header.php';
                     </div>
                 </div>
             <?php else: ?>
-                <!-- Error -->
-                <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
-                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-red-500">Gagal</h3>
-                    </div>
-                    <div class="text-sm text-red-400">
-                        <?php echo htmlspecialchars($result['error'] ?? 'Unknown error', ENT_QUOTES, 'UTF-8'); ?>
-                    </div>
-                </div>
+                                 <!-- Error -->
+                 <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
+                     <div class="flex items-center gap-3 mb-3">
+                         <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                             <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                             </svg>
+                         </div>
+                         <h3 class="text-lg font-semibold text-red-500">Gagal</h3>
+                     </div>
+                     <div class="text-sm text-red-400">
+                         <?php echo htmlspecialchars($result['error'] ?? 'Unknown error', ENT_QUOTES, 'UTF-8'); ?>
+                     </div>
+                     
+                     <?php if (!empty($result['debug'])): ?>
+                     <details class="mt-3">
+                         <summary class="cursor-pointer text-xs text-red-300 hover:text-red-200">Debug Info</summary>
+                         <pre class="mt-2 text-xs bg-red-500/20 p-2 rounded border border-red-500/30 overflow-x-auto"><?php echo htmlspecialchars(print_r($result['debug'], true), ENT_QUOTES, 'UTF-8'); ?></pre>
+                     </details>
+                     <?php endif; ?>
+                 </div>
             <?php endif; ?>
         <?php endif; ?>
     </div>
