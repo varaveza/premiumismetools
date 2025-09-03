@@ -71,12 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Call Python CLI
             $py = escapeshellcmd('python');
-            $cli = escapeshellarg(__DIR__ . '/py/cli_create.py');
             $argDomain = escapeshellarg($domain);
             $argPassword = escapeshellarg($password);
             $argTrial = escapeshellarg(trim($_POST['trial_link'] ?? ''));
             
-            $cmd = $py . ' ' . $cli . ' ' . $argDomain . ' ' . $argPassword;
+            // Run from py directory so cookies.txt is consistent, and force debug + cookie saves
+            $workdir = escapeshellarg(__DIR__ . '/py');
+            $cli_rel = escapeshellarg('cli_create.py');
+            $env = 'SAVE_COOKIES=true DEBUG_CREATION=true DEBUG_VERIFICATION=true';
+            
+            $cmd = 'cd ' . $workdir . ' && ' . $env . ' ' . $py . ' ' . $cli_rel . ' ' . $argDomain . ' ' . $argPassword;
             if (!empty($_POST['trial_link'])) {
                 $cmd .= ' ' . $argTrial;
             }
@@ -94,6 +98,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([$today]);
                 
                 $result = $json;
+                if (!empty($json['debug'])) {
+                    $result['debug'] = $json['debug'];
+                }
                 $result['display_password'] = $password;
             } else {
                 $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
@@ -180,6 +187,26 @@ include '../includes/header.php';
                         <div><strong>Email:</strong> <?php echo htmlspecialchars($result['email'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
                         <div><strong>Password:</strong> <?php echo htmlspecialchars($result['display_password'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
                         <div><strong>Status:</strong> <?php echo htmlspecialchars($result['status'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php
+                        // If debug contains discount_already_used, show a gentle notice
+                        $discountUsed = false;
+                        if (!empty($result['debug']) && is_array($result['debug'])) {
+                            foreach ($result['debug'] as $dbg) {
+                                if (is_array($dbg) && isset($dbg['result']) && $dbg['result'] === 'discount_already_used') {
+                                    $discountUsed = true;
+                                    break;
+                                }
+                                if (is_string($dbg) && strpos($dbg, 'discount_already_used') !== false) {
+                                    $discountUsed = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if ($discountUsed): ?>
+                            <div class="mt-2 text-yellow-400">
+                                <strong>Catatan:</strong> Link student sudah digunakan. Akun dibuat sebagai <em>basic</em>.
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php else: ?>

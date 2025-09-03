@@ -42,7 +42,12 @@ def main():
         finally:
             devnull.close()
         if not account:
-            print(json.dumps({"success": False, "error": "Account creation failed"}))
+            debug_creation_enabled = os.getenv("DEBUG_CREATION", "false").lower() == "true"
+            if debug_creation_enabled:
+                debug_create = getattr(spotify, "debug_create", None)
+                print(json.dumps({"success": False, "error": "Account creation failed", "debug": debug_create}))
+            else:
+                print(json.dumps({"success": False, "error": "Account creation failed"}))
             return 2
 
         email = account.get("email")
