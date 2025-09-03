@@ -71,8 +71,21 @@ $result = null;
 // Load flashed result if redirected
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_SESSION['result'])) {
     $result = $_SESSION['result'];
+    error_log("Session result loaded: " . print_r($result, true));
     unset($_SESSION['result']);
 }
+
+// Debug: Check if session is working
+if (isset($_GET['debug_session'])) {
+    echo "<pre>Session ID: " . session_id() . "</pre>";
+    echo "<pre>Session data: " . print_r($_SESSION, true) . "</pre>";
+    echo "<pre>Result: " . print_r($result, true) . "</pre>";
+}
+
+// Debug: Log session status
+error_log("GET request - Session ID: " . session_id());
+error_log("GET request - Session data: " . print_r($_SESSION, true));
+error_log("GET request - Result: " . print_r($result, true));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip = getClientIp();
@@ -112,9 +125,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($_POST['trial_link'])) { $cmd .= ' ' . $argTrial; }
             $output = shell_exec($cmd . ' 2>&1');
             $json = json_decode($output, true);
+            
+            // Debug: Log CLI execution
+            error_log("CLI Command: " . $cmd);
+            error_log("CLI Output: " . $output);
+            error_log("JSON Result: " . print_r($json, true));
+            
             if (is_array($json) && !empty($json['success'])) {
                 recordSubmission($pdo, $ip, $uaHash, $today);
                 $result = $json;
+                error_log("Success: Account created - " . ($json['email'] ?? 'unknown'));
             } else {
                 // Provide detailed debug info to diagnose local failures
                 $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
@@ -124,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'json_error' => function_exists('json_last_error_msg') ? json_last_error_msg() : 'n/a',
                     'python_path' => trim(shell_exec('which python3') ?: ''),
                 ];
+                error_log("Failed: CLI execution failed - " . print_r($result, true));
             }
         }
     }
@@ -131,7 +152,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (is_array($result)) {
         $result['display_password'] = $password;
         $_SESSION['result'] = $result;
+        error_log("Session result set: " . print_r($result, true));
     }
+    
+    // Debug: Check session before redirect
+    error_log("Before redirect - Session ID: " . session_id());
+    error_log("Before redirect - Session data: " . print_r($_SESSION, true));
+    
     header('Location: ' . basename(__FILE__), true, 303);
     exit;
 }
