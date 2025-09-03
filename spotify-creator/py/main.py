@@ -796,56 +796,107 @@ class StudentVerifier:
             try:
                 session = self.setup_session(cookie_string)
                 
+                self.log(f"Step 1: Applying with ID: {verification_id[:8]}")
                 apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
                 response = session.get(apply_url, allow_redirects=True)
+                
+                self.log(f"Step 1: {response.status_code}")
                 if debug_enabled:
                     self.debug_info.append({"step": 1, "status": response.status_code})
                 if response.status_code not in [200, 301, 302, 307]:
+                    self.log(f"Step 1 failed ({try_num}/{max_retry})")
                     time.sleep(2)
                     continue
                 
+                self.log("Step 2: Confirming verification")
                 confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
                 response = session.get(confirm_url, allow_redirects=True)
+                
+                self.log(f"Step 2: {response.status_code}")
                 if debug_enabled:
                     self.debug_info.append({"step": 2, "status": response.status_code})
                 if response.status_code not in [200, 301, 302, 307]:
+                    self.log(f"Step 2 failed ({try_num}/{max_retry})")
                     time.sleep(2)
                     continue
                 
+                self.log("Step 3: Checking verification status")
                 verify_url = "https://www.spotify.com/uk/student/verification/"
                 response = session.get(verify_url, allow_redirects=True)
+                
+                self.log(f"Step 3: {response.status_code}")
                 if debug_enabled:
                     self.debug_info.append({"step": 3, "status": response.status_code})
+                if response.status_code != 200:
+                    self.log(f"Step 3 failed ({try_num}/{max_retry})")
+                    time.sleep(2)
+                    continue
                 
-                if response.status_code == 200 and ("Congratulations" in response.text or "You're verified" in response.text or "you’re verified" in response.text):
+                html_content = response.text
+                
+                # Check for already used with more specific patterns (from tools/main.py)
+                main_match = re.search(r'<main[^>]*>(.*?)</main>', html_content, re.DOTALL)
+                if main_match:
+                    main_content = main_match.group(1)
+                    if "Discount already used" in main_content or "student ID has already been used" in main_content:
+                        self.log("This verification link has already been used")
+                        if debug_enabled:
+                            self.debug_info.append({"result": "discount_already_used"})
+                        discount_already_used = True
+                        break
+                
+                # Check for success with specific patterns (from tools/main.py)
+                is_verification_successful = False
+                success_patterns = [
+                    r"You['']re verified as a student until:",
+                    r"You are verified as a student until:",
+                    r"verified as a student until",
+                    r"<h1[^>]*>You['']re verified as a student",
+                    r"student status is verified",
+                    r"encore-premium-student-set"
+                ]
+                
+                for pattern in success_patterns:
+                    if re.search(pattern, html_content, re.IGNORECASE):
+                        is_verification_successful = True
+                        break
+                
+                if is_verification_successful:
+                    date_matches = re.search(r"until:?\s*(\d{2}/\d{2}/\d{4})", html_content)
+                    if date_matches:
+                        verified_until = date_matches.group(1)
+                        self.log(f"Verified until: {verified_until}", success=True)
+                    else:
+                        self.log(f"Student verification successful!", success=True)
+                        
+                    if debug_enabled:
+                        self.debug_info.append({"result": "success"})
                     verification_success = True
                     break
-                
-                if response.status_code == 200 and ("already used" in response.text.lower() or "discount is already active" in response.text.lower()):
-                    discount_already_used = True
-                    break
-                
-                time.sleep(2)
+                else:
+                    self.log(f"Verification pending ({try_num}/{max_retry})")
+                    time.sleep(5)
+                    
             except Exception as e:
+                self.log(f"Verification error: {str(e)} ({try_num}/{max_retry})")
                 if debug_enabled:
                     self.debug_info.append({"error": f"exception:{str(e)}"})
                 time.sleep(2)
                 continue
         
-        if verification_success:
-            if debug_enabled:
-                self.debug_info.append({"result": "success"})
-            return True
         if discount_already_used:
-            if debug_enabled:
-                self.debug_info.append({"result": "discount_already_used"})
+            if not verification_link:
+                self.mark_as_used()
             return False
-        
-        if not verification_link:
-            self.return_link()
-        if debug_enabled:
-            self.debug_info.append({"result": "failed"})
-        return False
+            
+        if not verification_success:
+            if not verification_link:
+                self.return_link()
+            if debug_enabled:
+                self.debug_info.append({"result": "failed"})
+            return False
+            
+        return verification_success
     
     def update_status(self, email, password, is_student=True):
         # Optionally skip writing account status files
