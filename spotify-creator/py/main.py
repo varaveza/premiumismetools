@@ -19,6 +19,51 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
+# Single-file cookie store to avoid many small files and permission issues
+COOKIE_STORE_FILE = "cookies.txt"
+
+def _load_cookie_for_email(email):
+    try:
+        if not os.path.exists(COOKIE_STORE_FILE):
+            return None
+        with open(COOKIE_STORE_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.rstrip("\n")
+                if not line.strip():
+                    continue
+                # Format: email|cookie_header
+                parts = line.split("|", 1)
+                if len(parts) == 2 and parts[0] == email:
+                    return parts[1]
+        return None
+    except Exception:
+        return None
+
+def _save_cookie_for_email(email, cookie_header):
+    try:
+        existing_lines = []
+        if os.path.exists(COOKIE_STORE_FILE):
+            with open(COOKIE_STORE_FILE, "r", encoding="utf-8") as f:
+                existing_lines = f.readlines()
+
+        updated = False
+        with open(COOKIE_STORE_FILE, "w", encoding="utf-8") as f:
+            for line in existing_lines:
+                raw = line.rstrip("\n")
+                if not raw:
+                    continue
+                parts = raw.split("|", 1)
+                if len(parts) == 2 and parts[0] == email:
+                    f.write(f"{email}|{cookie_header}\n")
+                    updated = True
+                else:
+                    f.write(line)
+            if not updated:
+                f.write(f"{email}|{cookie_header}\n")
+        return True
+    except Exception:
+        return False
+
 class Capsolver:
     def __init__(self, api_key):
         self.api_key = api_key
@@ -492,9 +537,16 @@ class Spotify:
             with open("akun.txt", "a") as f:
                 f.write(f"{account['email']}|{account['password']}|{status}\n")
         
-        # Store cookies as JSON in memory instead of files
+        # Store cookies to single file and JSON in memory
         if os.getenv("SAVE_COOKIES", "true").lower() != "false":
             try:
+                # Build cookie header
+                cookie_header = ""
+                for cookie in self.session.cookies:
+                    cookie_header += f"{cookie.name}={cookie.value}; "
+                # Persist to single cookie store
+                _save_cookie_for_email(account['email'], cookie_header.strip())
+
                 cookies_data = {
                     "email": account['email'],
                     "cookies": {},
@@ -513,14 +565,23 @@ class Spotify:
         self.log(f"Saved: {account['email']}")
     
     def create(self):        
+        debug_enabled = os.getenv("DEBUG_CREATION", "false").lower() == "true"
+        if debug_enabled:
+            self.debug_create = []
         if not self.get_data():
+            if debug_enabled:
+                self.debug_create.append({"stage": "get_data", "result": "failed"})
             return False
             
         account = self.gen_account()
+        if debug_enabled:
+            self.debug_create.append({"stage": "gen_account", "email": account.get("email")})
         self.log(f"{account['email']} | {account['name']}")
         
         self.log("Validating account")
         if not self.check_email(account['email']) or not self.gen_dossier(account['email']) or not self.check_pwd(account['password']):
+            if debug_enabled:
+                self.debug_create.append({"stage": "validate", "result": "failed"})
             self.log("Validation failed")
             return False
         
@@ -535,15 +596,20 @@ class Spotify:
             )
             if captcha:
                 break
-            self.log(f"Captcha failed, retrying ({attempt}/{max_captcha_attempts})")
+            if debug_enabled:
+                self.debug_create.append({"stage": "captcha", "attempt": attempt, "result": "retry"})
             time.sleep(2)
         
         if not captcha:
+            if debug_enabled:
+                self.debug_create.append({"stage": "captcha", "result": "failed"})
             self.log("Captcha failed - giving up")
             return False
         
         self.log("Registering account")
         result = self.register(account, captcha)
+        if debug_enabled:
+            self.debug_create.append({"stage": "register", "result": bool(result)})
         
         if not result:
             self.log("Registration failed")
@@ -551,17 +617,26 @@ class Spotify:
             
         if isinstance(result, dict) and result.get("challenge"):
             self.log("Solving challenge")
-            if not self.solve_challenge(result):
+            ok = self.solve_challenge(result)
+            if debug_enabled:
+                self.debug_create.append({"stage": "challenge", "result": ok})
+            if not ok:
                 self.log("Challenge failed")
                 return False
         
         self.log("Getting configuration")
         self.get_config()
+        if debug_enabled:
+            self.debug_create.append({"stage": "get_config", "result": "ok"})
         
         self.log("Authenticating")
         self.auth()
+        if debug_enabled:
+            self.debug_create.append({"stage": "auth", "result": "ok"})
         
         self.save(account)
+        if debug_enabled:
+            self.debug_create.append({"stage": "done", "result": "ok"})
         self.log(f"Account created: {account['email']}", success=True)
         return account
 
@@ -650,8 +725,8 @@ class StudentVerifier:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-GB,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
-            "Referer": "https://www.spotify.com/uk/",
-            "Cookie": (cookie_string + "; sp_country=GB").strip()
+            "Referer": "https://www.spotify.com/",
+            "Cookie": cookie_string
         }
         
         if self.use_proxy and self.proxy:
@@ -677,11 +752,14 @@ class StudentVerifier:
         debug_enabled = os.getenv("DEBUG_VERIFICATION", "false").lower() == "true"
         self.debug_info = [] if debug_enabled else None
         
-        # Require cookie_string to avoid filesystem usage
+        # Load cookies automatically from single file if not provided
         if not cookie_string:
-            if debug_enabled:
-                self.debug_info.append({"error": "missing_cookie_string"})
-            return False
+            email = account.get('email') if isinstance(account, dict) else None
+            cookie_string = _load_cookie_for_email(email) if email else None
+            if not cookie_string:
+                if debug_enabled:
+                    self.debug_info.append({"error": "missing_cookie_string"})
+                return False
         
         # Use provided verification_link if available; otherwise fetch one
         if verification_link:
@@ -718,7 +796,7 @@ class StudentVerifier:
             try:
                 session = self.setup_session(cookie_string)
                 
-                apply_url = f"https://www.spotify.com/uk/student/apply/sheerid-program?verificationId={verification_id}"
+                apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
                 response = session.get(apply_url, allow_redirects=True)
                 if debug_enabled:
                     self.debug_info.append({"step": 1, "status": response.status_code})
@@ -1053,6 +1131,9 @@ class SpotifyLogin:
         for cookie in self.session.cookies:
             cookie_header += f"{cookie.name}={cookie.value}; "
         
+        # Persist to single cookie store
+        _save_cookie_for_email(getattr(self, "email", None), cookie_header.strip())
+
         # Also keep an in-memory JSON copy for other flows
         try:
             self.cookies_json = {

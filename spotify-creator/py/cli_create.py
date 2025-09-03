@@ -27,11 +27,8 @@ def main():
         os.environ["DOMAIN"] = domain
         os.environ["PASSWORD"] = password
         
-        # DISABLE account file writing - prevent permission errors
+        # Keep account files off to avoid extra writes; cookies will still be saved
         os.environ["WRITE_ACCOUNT_FILES"] = "false"
-        
-        # DISABLE cookie saving - prevent permission errors  
-        os.environ["SAVE_COOKIES"] = "false"
 
         use_proxy = (os.getenv("USE_PROXY", "False").lower() == "true")
 
@@ -48,11 +45,6 @@ def main():
             print(json.dumps({"success": False, "error": "Account creation failed"}))
             return 2
 
-        # Build cookie header directly from live session (no file/no env gating)
-        cookie_header = ""
-        for c in spotify.session.cookies:
-            cookie_header += f"{c.name}={c.value}; "
-
         email = account.get("email")
         is_student = False
         debug_payload = None
@@ -63,7 +55,8 @@ def main():
                 try:
                     with contextlib.redirect_stdout(devnull2), contextlib.redirect_stderr(devnull2):
                         verifier = StudentVerifier(process_id=0, use_proxy=use_proxy)
-                        is_student = bool(verifier.verify({"email": email, "password": password}, verification_link=trial_link, cookie_string=cookie_header))
+                        # Let verifier load cookies from cookies.txt automatically
+                        is_student = bool(verifier.verify({"email": email, "password": password}, verification_link=trial_link))
                         if os.getenv("DEBUG_VERIFICATION", "false").lower() == "true":
                             debug_payload = getattr(verifier, 'debug_info', None)
                 finally:
