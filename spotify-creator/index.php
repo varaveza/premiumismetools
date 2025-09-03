@@ -101,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($json['debug'])) {
                     $result['debug'] = $json['debug'];
                 }
+                // Mark that we attempted student verification if a trial link was provided
+                $result['trial_attempted'] = !empty($_POST['trial_link']);
                 $result['display_password'] = $password;
             } else {
                 $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
@@ -112,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'python_path' => trim(shell_exec('which python 2>&1') ?: 'not found'),
                     'cli_exists' => file_exists(__DIR__ . '/py/cli_create.py') ? 'yes' : 'no'
                 ];
+                $result['trial_attempted'] = !empty($_POST['trial_link']);
             }
         }
     }
@@ -205,6 +208,11 @@ include '../includes/header.php';
                         if ($discountUsed): ?>
                             <div class="mt-2 text-yellow-400">
                                 <strong>Catatan:</strong> Link student sudah digunakan. Akun dibuat sebagai <em>basic</em>.
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($result['trial_attempted']) && !$discountUsed && ($result['status'] ?? '') === 'basic'): ?>
+                            <div class="mt-2 text-yellow-400">
+                                <strong>Catatan:</strong> Verifikasi student dicoba, namun tidak terkonfirmasi. Link mungkin tidak valid/expired atau cookies login tidak sesuai.
                             </div>
                         <?php endif; ?>
                     </div>
