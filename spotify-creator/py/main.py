@@ -832,6 +832,11 @@ class StudentVerifier:
                     time.sleep(2)
                     continue
                 
+                # Save verification HTML for debugging
+                os.makedirs("verification_html", exist_ok=True)
+                with open(f"verification_html/{account.get('email', 'unknown')}.html", "w", encoding="utf-8") as f:
+                    f.write(response.text)
+                
                 html_content = response.text
                 
                 # Check for already used with more specific patterns (from tools/main.py)
@@ -887,6 +892,8 @@ class StudentVerifier:
         if discount_already_used:
             if not verification_link:
                 self.mark_as_used()
+            if debug_enabled:
+                self.debug_info.append({"result": "discount_already_used"})
             return False
             
         if not verification_success:
