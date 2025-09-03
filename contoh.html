@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contoh Header Scrollable</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .nav-scroller { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+        .nav-viewport { overflow-x: auto; overflow-y: hidden; position: relative; white-space: nowrap; scrollbar-width: none; -ms-overflow-style: none; }
+        .nav-viewport::-webkit-scrollbar { display: none; }
+        .nav-track { display: inline-flex; gap: 8px; padding: 0; white-space: nowrap; }
+        .nav-track.desktop-nav { flex-wrap: nowrap; }
+        .nav-arrow { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-light); cursor: pointer; display:flex; align-items:center; justify-content:center; }
+        .nav-arrow:disabled { opacity: .4; cursor: default; }
+
+        /* Use site's default container sizing from assets/css/style.css */
+        .header-section { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .footer { text-align:center; opacity:.8; padding: 18px 0 6px; }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <main class="container-main">
+        <header class="header-section">
+            <img src="logo.svg" alt="Premiumisme Logo" class="logo">
+
+            <div class="nav-scroller">
+                <button class="nav-arrow left" id="navPrev" aria-label="Prev" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="nav-viewport" id="navViewport">
+                    <nav class="desktop-nav nav-track" id="navTrack">
+                        <a href="generator-email/" class="nav-link">Generator Email</a>
+                        <a href="gsuite/" class="nav-link">GSuite Creator</a>
+                        <a href="refund-calculator/" class="nav-link">Refund Calculator</a>
+                        <a href="split-mail/" class="nav-link">Email Splitter</a>
+                        <a href="remove-duplicate/" class="nav-link">Remove Duplicate</a>
+                        <a href="shortlink/" class="nav-link">Shortlink</a>
+                        <a href="spotify-creator/" class="nav-link active">Spotify Creator</a>
+                        <!-- Tambahkan item lain jika diperlukan -->
+                    </nav>
+                </div>
+                <button class="nav-arrow right" id="navNext" aria-label="Next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-section">
+            <!-- Kosong sebagai contoh area konten -->
+            <h2 style="margin:0; color: var(--text-light);">Contoh Halaman</h2>
+            <p style="opacity:.85; color: var(--text-light);">Area konten dapat diisi sesuai kebutuhan.</p>
+        </div>
+
+        <footer class="footer">
+            <p>Made With <i class="fas fa-heart"></i> Premiumisme.</p>
+        </footer>
+    </main>
+
+    <script>
+        (function(){
+            const viewport = document.getElementById('navViewport');
+            const track = document.getElementById('navTrack');
+            const prev = document.getElementById('navPrev');
+            const next = document.getElementById('navNext');
+
+            function updateArrows(){
+                const maxScroll = track.scrollWidth - viewport.clientWidth;
+                const x = viewport.scrollLeft;
+                prev.disabled = x <= 0;
+                next.disabled = x >= maxScroll - 1;
+            }
+
+            function scrollByStep(dir){
+                const maxScroll = track.scrollWidth - viewport.clientWidth;
+                const step = Math.max(160, Math.round(viewport.clientWidth * 0.6));
+                const target = viewport.scrollLeft + dir * step;
+
+                if (dir > 0 && (viewport.scrollLeft >= maxScroll - 1)) {
+                    // wrap to start
+                    viewport.scrollTo({ left: 0, behavior: 'smooth' });
+                } else if (dir < 0 && (viewport.scrollLeft <= 1)) {
+                    // wrap to end
+                    viewport.scrollTo({ left: maxScroll, behavior: 'smooth' });
+                } else {
+                    viewport.scrollTo({ left: Math.max(0, Math.min(maxScroll, target)), behavior: 'smooth' });
+                }
+                setTimeout(updateArrows, 350);
+            }
+
+            prev.addEventListener('click', () => scrollByStep(-1));
+            next.addEventListener('click', () => scrollByStep(1));
+            viewport.addEventListener('scroll', updateArrows);
+            window.addEventListener('resize', updateArrows);
+            updateArrows();
+        })();
+    </script>
+</body>
+</html>
+
+

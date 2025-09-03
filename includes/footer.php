@@ -9,6 +9,43 @@
     </div>
 
     <script>
+        // Header scrollable nav arrows
+        (function(){
+            const viewport = document.getElementById('navViewport');
+            const track = document.getElementById('navTrack');
+            const prev = document.getElementById('navPrev');
+            const next = document.getElementById('navNext');
+            if (!viewport || !track || !prev || !next) return;
+
+            function updateArrows(){
+                const maxScroll = track.scrollWidth - viewport.clientWidth;
+                const x = viewport.scrollLeft;
+                prev.disabled = x <= 0;
+                next.disabled = x >= maxScroll - 1;
+            }
+
+            function scrollByStep(dir){
+                const maxScroll = track.scrollWidth - viewport.clientWidth;
+                const step = Math.max(160, Math.round(viewport.clientWidth * 0.6));
+                const target = viewport.scrollLeft + dir * step;
+
+                if (dir > 0 && (viewport.scrollLeft >= maxScroll - 1)) {
+                    viewport.scrollTo({ left: 0, behavior: 'smooth' });
+                } else if (dir < 0 && (viewport.scrollLeft <= 1)) {
+                    viewport.scrollTo({ left: maxScroll, behavior: 'smooth' });
+                } else {
+                    viewport.scrollTo({ left: Math.max(0, Math.min(maxScroll, target)), behavior: 'smooth' });
+                }
+                setTimeout(updateArrows, 350);
+            }
+
+            prev.addEventListener('click', () => scrollByStep(-1));
+            next.addEventListener('click', () => scrollByStep(1));
+            viewport.addEventListener('scroll', updateArrows);
+            window.addEventListener('resize', updateArrows);
+            updateArrows();
+        })();
+
         // Mobile Navigation Toggle
         document.addEventListener('DOMContentLoaded', function() {
             const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -71,5 +108,12 @@
             }, 3000);
         }
     </script>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
+        }
+    </style>
 </body>
 </html>

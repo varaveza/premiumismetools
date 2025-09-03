@@ -1,5 +1,9 @@
 <?php
 require __DIR__ . '/config.php';
+// Use session for PRG (Post/Redirect/Get) to avoid form resubmission on refresh
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- Helpers ---
 function getClientIp(): string {
@@ -83,17 +87,23 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 initializeDb($pdo);
 
 $result = null;
+// Load flashed result if redirected
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_SESSION['result'])) {
+    $result = $_SESSION['result'];
+    unset($_SESSION['result']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip = getClientIp();
     $ua = getUserAgent();
     $uaHash = hash('sha256', $ua);
     $today = todayDate();
 
-    // Global daily cap first
-    if (getDailyCount($pdo, $today) >= 100) {
+    // Global daily cap first (skip if disabled via config)
+    if (!$cfg['DISABLE_RATE_LIMIT'] && getDailyCount($pdo, $today) >= 100) {
         http_response_code(429);
         $result = ['success' => false, 'error' => 'Daily global limit reached (100)'];
-    } elseif (hasReachedLimit($pdo, $ip, $uaHash, $today)) {
+    } elseif (!$cfg['DISABLE_RATE_LIMIT'] && hasReachedLimit($pdo, $ip, $uaHash, $today)) {
         http_response_code(429);
         $result = ['success' => false, 'error' => 'Daily limit reached for this IP/UA'];
     } else {
@@ -117,6 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+    // Attach display password and redirect (PRG)
+    if (is_array($result)) {
+        $result['display_password'] = $password;
+        $_SESSION['result'] = $result;
+    }
+    header('Location: ' . basename(__FILE__), true, 303);
+    exit;
 }
 ?>
 <?php
@@ -131,34 +148,97 @@ include '../includes/header.php';
           <h2>Spotify Creator</h2>
           <form method="post" class="grid grid-cols-1 gap-4">
             <div>
-              <label class="mb-2 text-sm opacity-80">Domain (opsional)</label>
-              <input class="form-input" name="domain" placeholder="kosongkan untuk pakai .env">
+              <label class="mb-2 text-sm opacity-80">Domain</label>
+              <input class="form-input" name="domain" placeholder="motionisme.com">
             </div>
             <div>
-              <label class="mb-2 text-sm opacity-80">Password (opsional)</label>
-              <input class="form-input" name="password" type="password" placeholder="kosongkan untuk pakai .env">
+              <label class="mb-2 text-sm opacity-80">Password</label>
+              <input class="form-input" name="password" type="password" placeholder="Premium@123">
             </div>
             <div>
-              <label class="mb-2 text-sm opacity-80">Trial link (opsional)</label>
+              <label class="mb-2 text-sm opacity-80">Trial link</label>
               <input class="form-input" name="trial_link" placeholder="https://www.spotify.com/student/...verificationId=...">
             </div>
             <button type="submit" class="btn btn-primary w-full mt-2">Buat Akun</button>
           </form>
+          <!-- Processing Modal -->
+          <div id="processingModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; padding: 24px 24px 22px; max-width: 440px; width: calc(100% - 40px); text-align: center;">
+              <div style="display:flex; align-items:center; justify-content:center; margin-bottom: 10px; gap: 14px;">
+                <div style="width: 34px; height: 34px; position: relative;">
+                  <div style="position:absolute; inset:0; border-radius:50%; border:3px solid rgba(255,255,255,.15);"></div>
+                  <div class="spinner-arc" style="position:absolute; inset:0; border-radius:50%; border:3px solid transparent; border-top-color: var(--accent); animation: spin 0.9s linear infinite;"></div>
+                </div>
+                <div style="text-align:left;">
+                  <div style="font-weight:700; color: var(--text-light);">Memproses pembuatan akun</div>
+                  <div style="opacity:.85; color: var(--text-light); font-size: 13px;">Waktu berlalu: <span id="elapsedSeconds">0.0</span> detik</div>
+                </div>
+              </div>
+              <div class="dots" style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:4px;">
+                <span class="dot" style="width:6px; height:6px; border-radius:50%; background: var(--accent); opacity:.85; animation: bounce 1.2s infinite ease-in-out;"></span>
+                <span class="dot" style="width:6px; height:6px; border-radius:50%; background: var(--accent); opacity:.65; animation: bounce 1.2s .15s infinite ease-in-out;"></span>
+                <span class="dot" style="width:6px; height:6px; border-radius:50%; background: var(--accent); opacity:.45; animation: bounce 1.2s .3s infinite ease-in-out;"></span>
+              </div>
+            </div>
+          </div>
           <?php if ($result): ?>
             <div class="result-card mt-6">
-              <h3 class="text-lg mb-2">Result</h3>
-              <pre class="result-output" style="white-space: pre-wrap;"><?php echo htmlspecialchars(json_encode([
-                'success' => $result['success'] ?? false,
-                'email' => $result['email'] ?? null,
-                'status' => $result['status'] ?? null,
-                'error' => $result['error'] ?? null,
-              ], JSON_PRETTY_PRINT)); ?></pre>
+              <?php if (!empty($result['success'])): ?>
+                <h3 class="text-lg mb-2">Akun Berhasil Dibuat</h3>
+                <div class="space-y-2 text-sm">
+                  <div><strong>Email:</strong> <?php echo htmlspecialchars($result['email'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                  <div><strong>Password:</strong> <?php echo htmlspecialchars($result['display_password'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                  <div><strong>Status:</strong> <?php echo htmlspecialchars($result['status'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                </div>
+                <script>
+                  // Mark done and stop timer
+                  (function(){
+                    var modal = document.getElementById('processingModal');
+                    if (modal) modal.style.display = 'none';
+                    if (window.__elapsedTimer) { clearInterval(window.__elapsedTimer); window.__elapsedTimer = null; }
+                  })();
+                </script>
+              <?php else: ?>
+                <h3 class="text-lg mb-2">Gagal</h3>
+                <p class="text-sm">Gagal, silakan coba lagi.</p>
+                <script>
+                  // Stop timer on failure too
+                  (function(){
+                    var modal = document.getElementById('processingModal');
+                    if (modal) modal.style.display = 'none';
+                    if (window.__elapsedTimer) { clearInterval(window.__elapsedTimer); window.__elapsedTimer = null; }
+                  })();
+                </script>
+              <?php endif; ?>
             </div>
           <?php endif; ?>
         </div>
       </div>
 
 <?php include '../includes/footer.php'; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function() {
+      var modal = document.getElementById('processingModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        // Start elapsed timer
+        var start = Date.now();
+        var target = document.getElementById('elapsedSeconds');
+        if (target) {
+          window.__elapsedTimer = setInterval(function() {
+            var elapsed = (Date.now() - start) / 1000;
+            target.textContent = elapsed.toFixed(1);
+          }, 100);
+        }
+      }
+    }, { once: true });
+  }
+});
+</script>
 
 <?php if ($result && (!($result['success'] ?? false)) && (($result['error'] ?? '') === 'Daily global limit reached (100)')): ?>
 <script>

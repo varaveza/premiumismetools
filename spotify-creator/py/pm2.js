@@ -14,27 +14,16 @@ module.exports = {
       watch: false,
       max_memory_restart: '300M',
       time: true
-    }
-  ]
-};
-
-
-module.exports = {
-  apps: [
+    },
     {
-      name: 'spo',
+      name: 'spo-cookie-cleaner',
       cwd: __dirname,
-      script: 'bash',
-      args: ['-lc', 'gunicorn -w 2 -b 127.0.0.1:5111 app:APP'],
-      env: {
-        BACKEND_API_KEY: 'pablocc@222',
-        USE_PROXY: 'true',
-        PYTHONUNBUFFERED: '1'
-      },
-      autorestart: true,
+      script: 'node',
+      args: ['cleanup_cookies.js'],
+      autorestart: false,
       watch: false,
-      max_memory_restart: '300M',
-      time: true
+      time: true,
+      cron_restart: '0 * * * *' // run hourly
     }
   ]
 };

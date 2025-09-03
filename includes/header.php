@@ -15,6 +15,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo $base_prefix; ?>assets/css/style.css">
+    <style>
+        .nav-scroller { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+        .nav-viewport { overflow-x: auto; overflow-y: hidden; position: relative; white-space: nowrap; scrollbar-width: none; -ms-overflow-style: none; }
+        .nav-viewport::-webkit-scrollbar { display: none; }
+        .nav-track { display: inline-flex; gap: 8px; padding: 0; white-space: nowrap; }
+        .nav-track.desktop-nav { flex-wrap: nowrap; }
+        .nav-arrow { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-light); cursor: pointer; display:flex; align-items:center; justify-content:center; }
+        .nav-arrow:disabled { opacity: .4; cursor: default; }
+    </style>
     
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -61,16 +70,26 @@
                 <img src="<?php echo $base_prefix; ?>logo.svg" alt="Premiumisme Logo" class="logo">
             </div>
 
-            <!-- Desktop Navigation -->
-            <nav class="desktop-nav">
-                <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
-                <a href="<?php echo $base_prefix; ?>refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
-                <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
-            </nav>
+            <!-- Desktop Navigation: Scrollable with arrows -->
+            <div class="nav-scroller">
+                <button class="nav-arrow left" id="navPrev" aria-label="Prev" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="nav-viewport" id="navViewport">
+                    <nav class="desktop-nav nav-track" id="navTrack">
+                        <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                        <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
+                        <a href="<?php echo $base_prefix; ?>refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
+                        <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
+                        <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
+                        <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
+                        <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
+                    </nav>
+                </div>
+                <button class="nav-arrow right" id="navNext" aria-label="Next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
 
             <!-- Mobile Navigation Overlay -->
             <div id="mobile-nav" class="mobile-nav">

@@ -14,6 +14,8 @@ function load_config(): array {
         'FLASK_BACKEND_API_KEY' => env('FLASK_BACKEND_API_KEY', env('BACKEND_API_KEY', '')),
         'SPOTIFY_DOMAIN' => env('SPOTIFY_DOMAIN', ''),
         'SPOTIFY_PASSWORD' => env('SPOTIFY_PASSWORD', ''),
+        // Allow disabling PHP-side rate limit (useful for localhost/dev)
+        'DISABLE_RATE_LIMIT' => strtolower((string) env('DISABLE_RATE_LIMIT', 'true')) === 'true',
     ];
     return $config;
 }

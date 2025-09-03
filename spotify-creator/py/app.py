@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 from main import Spotify, StudentVerifier
 
 
+# Load .env from parent folder (spotify-creator/.env) and current folder
+BASE_DIR = os.path.dirname(__file__)
+load_dotenv(os.path.join(BASE_DIR, '..', '.env'))
 load_dotenv()
 APP = Flask(__name__)
 
@@ -113,7 +116,7 @@ def index():
             except Exception:
                 is_student = False
 
-        status_text = "STUDENT" if is_student else "REGULAR"
+        status_text = "student" if is_student else "basic"
         message = f"<div class='success'><strong>Sukses:</strong> {email} dibuat sebagai <strong>{status_text}</strong>.</div>"
         return render_template_string(FORM_HTML, message=message, domain=domain, password=password, trial_link=trial_link)
 
@@ -162,7 +165,7 @@ def api_create():
         return {
             "success": True,
             "email": email,
-            "status": "STUDENT" if is_student else "REGULAR"
+            "status": "student" if is_student else "basic"
         }, 200
     except Exception as e:
         return {"success": False, "error": str(e)}, 500
