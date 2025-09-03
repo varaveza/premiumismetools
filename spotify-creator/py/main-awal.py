@@ -23,46 +23,22 @@ class Capsolver:
     def __init__(self, api_key):
         self.api_key = api_key
         self.base_url = "https://api.capsolver.com"
-        # Optional tuning via env
-        self.wait_attempts = int(os.getenv("CAPS_WAIT_ATTEMPTS", "30"))
-        self.wait_interval = int(os.getenv("CAPS_WAIT_INTERVAL", "3"))
         
     def create_task(self, task_type, task_data):
         url = f"{self.base_url}/createTask"
         payload = {"clientKey": self.api_key, "task": {"type": task_type, **task_data}}
-        try:
-            resp = requests.post(url, json=payload, timeout=20)
-            data = resp.json()
-            if data.get("errorId"):
-                print(f"[CAPSOLVER] createTask error: {data.get('errorCode')} - {data.get('errorDescription')}")
-            return data
-        except Exception as e:
-            print(f"[CAPSOLVER] createTask exception: {str(e)}")
-            return {"errorId": 1, "errorCode": "ClientException", "errorDescription": str(e)}
+        return requests.post(url, json=payload).json()
         
     def get_result(self, task_id):
         url = f"{self.base_url}/getTaskResult"
         payload = {"clientKey": self.api_key, "taskId": task_id}
-        try:
-            resp = requests.post(url, json=payload, timeout=20)
-            data = resp.json()
-            if data.get("errorId"):
-                print(f"[CAPSOLVER] getTaskResult error: {data.get('errorCode')} - {data.get('errorDescription')}")
-            return data
-        except Exception as e:
-            print(f"[CAPSOLVER] getTaskResult exception: {str(e)}")
-            return {"errorId": 1, "errorCode": "ClientException", "errorDescription": str(e)}
+        return requests.post(url, json=payload).json()
         
-    def wait_result(self, task_id, max_attempts=None, interval=None):
-        max_attempts = max_attempts or self.wait_attempts
-        interval = interval or self.wait_interval
+    def wait_result(self, task_id, max_attempts=30, interval=3):
         for attempt in range(1, max_attempts + 1):
             result = self.get_result(task_id)
             if result.get("status") == "ready":
                 return result.get("solution", {}).get("gRecaptchaResponse")
-            if result.get("status") == "failed":
-                print(f"[CAPSOLVER] task failed: {result}")
-                return None
             time.sleep(interval)
         return None
         
@@ -92,9 +68,6 @@ class Capsolver:
 
 class Spotify:
     def __init__(self, process_id=0, use_proxy=False):
-        # Load .env from parent folder (spotify-creator/.env) and current folder
-        base_dir = os.path.dirname(__file__)
-        load_dotenv(os.path.join(base_dir, '..', '.env'))
         load_dotenv()
         self.process_id = process_id
         self.use_proxy = use_proxy
@@ -112,7 +85,6 @@ class Spotify:
         self.install_id = self._random_id()
         self.submit_id = self._random_id()
         self.login_token = None
-        self.cookies_json = {} # Initialize for in-memory cookie storage
         
     def _init_session(self):
         session = tls_client.Session(client_identifier="chrome_113", random_tls_extension_order=True)
@@ -206,7 +178,7 @@ class Spotify:
         
         username = (username_prefix + random_numbers)[:12]
 
-        display_name = "Premiumisme"
+        display_name = self.default_name if self.default_name else username.title()
             
         return {
             "email": f"{username}@{self.domain}",
@@ -476,40 +448,29 @@ class Spotify:
         return False
     
     def save(self, account, is_student=False):
-        # Optionally write account files based on env flag
-        if os.getenv("WRITE_ACCOUNT_FILES", "true").lower() == "true":
-            target_file = "akunstudent.txt" if is_student else "akunbiasa.txt"
-            
-            for file_name in ["akunbiasa.txt", "akunstudent.txt"]:
-                if not os.path.exists(file_name):
-                    with open(file_name, "w") as f:
-                        pass
-            
-            with open(target_file, "a") as f:
-                f.write(f"{account['email']}|{account['password']}\n")
-            
-            status = "student" if is_student else "basic"
-            with open("akun.txt", "a") as f:
-                f.write(f"{account['email']}|{account['password']}|{status}\n")
+        os.makedirs("cookies", exist_ok=True)
         
-        # Store cookies as JSON in memory instead of files
-        if os.getenv("SAVE_COOKIES", "true").lower() != "false":
-            try:
-                cookies_data = {
-                    "email": account['email'],
-                    "cookies": {},
-                    "timestamp": time.time()
-                }
-                
-                for cookie in self.session.cookies:
-                    cookies_data["cookies"][cookie.name] = cookie.value
-                
-                # Store in memory (self.cookies_json) instead of file
-                self.cookies_json = cookies_data
-                self.log(f"Cookies stored in memory for {account['email']}")
-            except Exception as e:
-                self.log(f"Warning: Could not store cookies: {e}")
+        target_file = "akunstudent.txt" if is_student else "akunbiasa.txt"
         
+        for file_name in ["akunbiasa.txt", "akunstudent.txt"]:
+            if not os.path.exists(file_name):
+                with open(file_name, "w") as f:
+                    pass
+        
+        with open(target_file, "a") as f:
+            f.write(f"{account['email']}|{account['password']}\n")
+        
+        status = "STUDENT" if is_student else "REGULAR"
+        with open("akun.txt", "a") as f:
+            f.write(f"{account['email']}|{account['password']}|{status}\n")
+            
+        cookie_header = ""
+        for cookie in self.session.cookies:
+            cookie_header += f"{cookie.name}={cookie.value}; "
+            
+        with open(f"cookies/{account['email']}.txt", "w") as f:
+            f.write(cookie_header)
+            
         self.log(f"Saved: {account['email']}")
     
     def create(self):        
@@ -525,21 +486,14 @@ class Spotify:
             return False
         
         self.log("Solving captcha")
-        max_captcha_attempts = int(os.getenv("CAPTCHA_MAX_ATTEMPTS", "10"))
-        captcha = None
-        for attempt in range(1, max_captcha_attempts + 1):
-            captcha = self.capsolver.solve_v3(
-                "https://www.spotify.com",
-                "6LfCVLAUAAAAALFwwRnnCJ12DalriUGbj8FW_J39",
-                "website/signup/submit_email"
-            )
-            if captcha:
-                break
-            self.log(f"Captcha failed, retrying ({attempt}/{max_captcha_attempts})")
-            time.sleep(2)
+        captcha = self.capsolver.solve_v3(
+            "https://www.spotify.com",
+            "6LfCVLAUAAAAALFwwRnnCJ12DalriUGbj8FW_J39",
+            "website/signup/submit_email"
+        )
         
         if not captcha:
-            self.log("Captcha failed - giving up")
+            self.log("Captcha failed")
             return False
         
         self.log("Registering account")
@@ -645,13 +599,14 @@ class StudentVerifier:
     
     def setup_session(self, cookie_string):
         session = tls_client.Session(client_identifier="chrome_113", random_tls_extension_order=True)
+        
         session.headers = {
-            "User-Agent": Spotify()._random_ua(),
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-GB,en;q=0.9",
+            "Accept-Language": "en-US,en;q=0.5",
             "Accept-Encoding": "gzip, deflate, br",
-            "Referer": "https://www.spotify.com/uk/",
-            "Cookie": (cookie_string + "; sp_country=GB").strip()
+            "Referer": "https://www.spotify.com/",
+            "Cookie": cookie_string
         }
         
         if self.use_proxy and self.proxy:
@@ -671,108 +626,135 @@ class StudentVerifier:
                 }
         return session
     
-    def verify(self, account, max_retry=3, verification_link=None, cookie_string=None):
+    def verify(self, account, max_retry=3):
         max_link_attempts = 5
         
-        debug_enabled = os.getenv("DEBUG_VERIFICATION", "false").lower() == "true"
-        self.debug_info = [] if debug_enabled else None
-        
-        # Require cookie_string to avoid filesystem usage
-        if not cookie_string:
-            if debug_enabled:
-                self.debug_info.append({"error": "missing_cookie_string"})
-            return False
-        
-        # Use provided verification_link if available; otherwise fetch one
-        if verification_link:
-            selected_link = verification_link
-        else:
-            selected_link = None
-            for link_attempt in range(1, max_link_attempts + 1):
-                selected_link = self.get_link()
-                if selected_link:
-                    break
-            if not selected_link:
-                if debug_enabled:
-                    self.debug_info.append({"error": "no_verification_link"})
-                return False
-        
-        parsed_url = urlparse(selected_link)
-        query = parsed_url.query
-        verification_id = None
-        
-        if "verificationId=" in query:
-            verification_id = query.split("verificationId=")[1].split("&")[0]
-        
-        if not verification_id:
-            if debug_enabled:
-                self.debug_info.append({"error": "missing_verification_id"})
+        for link_attempt in range(1, max_link_attempts + 1):
+            verification_link = self.get_link()
             if not verification_link:
+                return False
+                
+            cookie_file = f"cookies/{account['email']}.txt"
+            if not os.path.exists(cookie_file):
+                self.log(f"No cookie file for {account['email']}")
                 self.return_link()
-            return False
-        
-        verification_success = False
-        discount_already_used = False
-        
-        for try_num in range(1, max_retry + 1):
-            try:
-                session = self.setup_session(cookie_string)
+                return False
                 
-                apply_url = f"https://www.spotify.com/uk/student/apply/sheerid-program?verificationId={verification_id}"
-                response = session.get(apply_url, allow_redirects=True)
-                if debug_enabled:
-                    self.debug_info.append({"step": 1, "status": response.status_code})
-                if response.status_code not in [200, 301, 302, 307]:
+            with open(cookie_file, "r") as f:
+                cookie_string = f.read().strip()
+                
+            parsed_url = urlparse(verification_link)
+            query = parsed_url.query
+            verification_id = None
+            
+            if "verificationId=" in query:
+                verification_id = query.split("verificationId=")[1].split("&")[0]
+            
+            if not verification_id:
+                self.log("Could not extract verification ID")
+                self.return_link()
+                return False
+            
+            verification_success = False
+            discount_already_used = False
+            
+            for try_num in range(1, max_retry + 1):
+                try:
+                    session = self.setup_session(cookie_string)
+                    
+                    self.log(f"Step 1: Applying with ID: {verification_id[:8]}")
+                    apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
+                    response = session.get(apply_url, allow_redirects=True)
+                    
+                    self.log(f"Step 1: {response.status_code}")
+                    if response.status_code not in [200, 301, 302, 307]:
+                        self.log(f"Step 1 failed ({try_num}/{max_retry})")
+                        time.sleep(2)
+                        continue
+                    
+                    self.log("Step 2: Confirming verification")
+                    confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
+                    response = session.get(confirm_url, allow_redirects=True)
+                    
+                    self.log(f"Step 2: {response.status_code}")
+                    if response.status_code not in [200, 301, 302, 307]:
+                        self.log(f"Step 2 failed ({try_num}/{max_retry})")
+                        time.sleep(2)
+                        continue
+                    
+                    self.log("Step 3: Checking verification status")
+                    verify_url = "https://www.spotify.com/uk/student/verification/"
+                    response = session.get(verify_url, allow_redirects=True)
+                    
+                    self.log(f"Step 3: {response.status_code}")
+                    if response.status_code != 200:
+                        self.log(f"Step 3 failed ({try_num}/{max_retry})")
+                        time.sleep(2)
+                        continue
+                    
+                    os.makedirs("verification_html", exist_ok=True)
+                    with open(f"verification_html/{account['email']}.html", "w", encoding="utf-8") as f:
+                        f.write(response.text)
+                    
+                    html_content = response.text
+                    
+                    main_match = re.search(r'<main[^>]*>(.*?)</main>', html_content, re.DOTALL)
+                    if main_match:
+                        main_content = main_match.group(1)
+                        if "Discount already used" in main_content or "student ID has already been used" in main_content:
+                            self.log("This verification link has already been used")
+                            discount_already_used = True
+                            break
+                    
+                    is_verification_successful = False
+                    success_patterns = [
+                        r"You['']re verified as a student until:",
+                        r"You are verified as a student until:",
+                        r"verified as a student until",
+                        r"<h1[^>]*>You['']re verified as a student",
+                        r"student status is verified",
+                        r"encore-premium-student-set"
+                    ]
+                    
+                    for pattern in success_patterns:
+                        if re.search(pattern, html_content, re.IGNORECASE):
+                            is_verification_successful = True
+                            break
+                    
+                    if is_verification_successful:
+                        date_matches = re.search(r"until:?\s*(\d{2}/\d{2}/\d{4})", html_content)
+                        if date_matches:
+                            verified_until = date_matches.group(1)
+                            self.log(f"Verified until: {verified_until}", success=True)
+                        else:
+                            self.log(f"Student verification successful!", success=True)
+                            
+                        self.update_status(account['email'], account['password'], is_student=True)
+                        verification_success = True
+                        break
+                    else:
+                        self.log(f"Verification pending ({try_num}/{max_retry})")
+                        time.sleep(5)
+                        
+                except Exception as e:
+                    self.log(f"Verification error: {str(e)} ({try_num}/{max_retry})")
                     time.sleep(2)
-                    continue
-                
-                confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
-                response = session.get(confirm_url, allow_redirects=True)
-                if debug_enabled:
-                    self.debug_info.append({"step": 2, "status": response.status_code})
-                if response.status_code not in [200, 301, 302, 307]:
-                    time.sleep(2)
-                    continue
-                
-                verify_url = "https://www.spotify.com/uk/student/verification/"
-                response = session.get(verify_url, allow_redirects=True)
-                if debug_enabled:
-                    self.debug_info.append({"step": 3, "status": response.status_code})
-                
-                if response.status_code == 200 and ("Congratulations" in response.text or "You're verified" in response.text or "you’re verified" in response.text):
-                    verification_success = True
-                    break
-                
-                if response.status_code == 200 and ("already used" in response.text.lower() or "discount is already active" in response.text.lower()):
-                    discount_already_used = True
-                    break
-                
-                time.sleep(2)
-            except Exception as e:
-                if debug_enabled:
-                    self.debug_info.append({"error": f"exception:{str(e)}"})
-                time.sleep(2)
+            
+            if discount_already_used:
+                self.mark_as_used()
+                self.log(f"Trying with a new link (attempt {link_attempt}/{max_link_attempts})")
                 continue
-        
-        if verification_success:
-            if debug_enabled:
-                self.debug_info.append({"result": "success"})
-            return True
-        if discount_already_used:
-            if debug_enabled:
-                self.debug_info.append({"result": "discount_already_used"})
-            return False
-        
-        if not verification_link:
-            self.return_link()
-        if debug_enabled:
-            self.debug_info.append({"result": "failed"})
+                
+            if not verification_success:
+                self.log(f"Failed to verify after {max_retry} attempts")
+                self.return_link()
+                
+            return verification_success
+            
+        self.log(f"Exhausted {max_link_attempts} verification links, all used or failed")
         return False
     
     def update_status(self, email, password, is_student=True):
-        # Optionally skip writing account status files
-        if os.getenv("WRITE_ACCOUNT_FILES", "true").lower() != "true":
-            return True
         with StudentVerifier._lock:
             try:
                 target_file = "akunstudent.txt" if is_student else "akunbiasa.txt"
@@ -787,7 +769,7 @@ class StudentVerifier:
                     if os.path.exists(file_name):
                         with open(file_name, "r") as f:
                             accounts = f.readlines()
-                        
+                            
                         if any(line.strip().split('|')[0] == email for line in accounts if line.strip() and '|' in line):
                             account_exists = True
                             
@@ -808,14 +790,14 @@ class StudentVerifier:
                             account_in_target = True
                         else:
                             f.write(acc)
-                        
+                            
                     if not account_in_target:
                         f.write(f"{email}|{password}\n")
                 
                 if not os.path.exists("akun.txt"):
                     with open("akun.txt", "w") as f:
                         pass
-                    
+                        
                 with open("akun.txt", "r") as f:
                     accounts = f.readlines()
                 
@@ -824,14 +806,14 @@ class StudentVerifier:
                     for account in accounts:
                         account_parts = account.strip().split("|")
                         if len(account_parts) >= 2 and account_parts[0] == email:
-                            status = "student" if is_student else "basic"
+                            status = "STUDENT" if is_student else "REGULAR"
                             f.write(f"{email}|{password}|{status}\n")
                             updated = True
                         else:
                             f.write(account)
-                        
+                            
                     if not updated:
-                        status = "student" if is_student else "basic"
+                        status = "STUDENT" if is_student else "REGULAR"
                         f.write(f"{email}|{password}|{status}\n")
                 
                 return True
@@ -1049,21 +1031,16 @@ class SpotifyLogin:
             return False
     
     def save_cookies(self):
+        os.makedirs("cookies", exist_ok=True)
+        
         cookie_header = ""
         for cookie in self.session.cookies:
             cookie_header += f"{cookie.name}={cookie.value}; "
-        
-        # Also keep an in-memory JSON copy for other flows
-        try:
-            self.cookies_json = {
-                "email": getattr(self, "email", None),
-                "cookies": {c.name: c.value for c in self.session.cookies},
-                "timestamp": time.time()
-            }
-        except Exception:
-            pass
-        
-        self.log("Cookies prepared in memory")
+            
+        with open(f"cookies/{self.email}.txt", "w") as f:
+            f.write(cookie_header)
+            
+        self.log(f"Cookies saved for {self.email}")
         return cookie_header
 
 
@@ -1110,9 +1087,7 @@ def login_and_verify_task(process_id):
     if not login_success:
         return False
         
-    # Only save cookies if enabled
-    if os.getenv("SAVE_COOKIES", "true").lower() != "false":
-        login.save_cookies()
+    login.save_cookies()
     
     # Verify as student
     verifier = StudentVerifier(process_id=process_id, use_proxy=use_proxy)
