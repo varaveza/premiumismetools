@@ -669,129 +669,101 @@ class StudentVerifier:
                 }
         return session
     
-    def verify(self, account, max_retry=3):
+    def verify(self, account, max_retry=3, verification_link=None, cookie_string=None):
         max_link_attempts = 5
         
-        for link_attempt in range(1, max_link_attempts + 1):
-            verification_link = self.get_link()
-            if not verification_link:
+        # Use provided verification_link if available; otherwise fetch one
+        if verification_link:
+            selected_link = verification_link
+        else:
+            selected_link = None
+            for link_attempt in range(1, max_link_attempts + 1):
+                selected_link = self.get_link()
+                if selected_link:
+                    break
+            if not selected_link:
                 return False
-                
+        
+        # Use provided cookie_string if available; otherwise read from cookies file
+        if not cookie_string:
             cookie_file = f"cookies/{account['email']}.txt"
             if not os.path.exists(cookie_file):
                 self.log(f"No cookie file for {account['email']}")
-                self.return_link()
+                # Return link only if we fetched it from pool
+                if not verification_link:
+                    self.return_link()
                 return False
-                
             with open(cookie_file, "r") as f:
                 cookie_string = f.read().strip()
-                
-            parsed_url = urlparse(verification_link)
-            query = parsed_url.query
-            verification_id = None
-            
-            if "verificationId=" in query:
-                verification_id = query.split("verificationId=")[1].split("&")[0]
-            
-            if not verification_id:
-                self.log("Could not extract verification ID")
+        
+        parsed_url = urlparse(selected_link)
+        query = parsed_url.query
+        verification_id = None
+        
+        if "verificationId=" in query:
+            verification_id = query.split("verificationId=")[1].split("&")[0]
+        
+        if not verification_id:
+            self.log("Could not extract verification ID")
+            if not verification_link:
                 self.return_link()
-                return False
-            
-            verification_success = False
-            discount_already_used = False
-            
-            for try_num in range(1, max_retry + 1):
-                try:
-                    session = self.setup_session(cookie_string)
-                    
-                    self.log(f"Step 1: Applying with ID: {verification_id[:8]}")
-                    apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
-                    response = session.get(apply_url, allow_redirects=True)
-                    
-                    self.log(f"Step 1: {response.status_code}")
-                    if response.status_code not in [200, 301, 302, 307]:
-                        self.log(f"Step 1 failed ({try_num}/{max_retry})")
-                        time.sleep(2)
-                        continue
-                    
-                    self.log("Step 2: Confirming verification")
-                    confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
-                    response = session.get(confirm_url, allow_redirects=True)
-                    
-                    self.log(f"Step 2: {response.status_code}")
-                    if response.status_code not in [200, 301, 302, 307]:
-                        self.log(f"Step 2 failed ({try_num}/{max_retry})")
-                        time.sleep(2)
-                        continue
-                    
-                    self.log("Step 3: Checking verification status")
-                    verify_url = "https://www.spotify.com/uk/student/verification/"
-                    response = session.get(verify_url, allow_redirects=True)
-                    
-                    self.log(f"Step 3: {response.status_code}")
-                    if response.status_code != 200:
-                        self.log(f"Step 3 failed ({try_num}/{max_retry})")
-                        time.sleep(2)
-                        continue
-                    
-                    # Disabled saving verification HTML to disk
-                    html_content = response.text
-                    
-                    main_match = re.search(r'<main[^>]*>(.*?)</main>', html_content, re.DOTALL)
-                    if main_match:
-                        main_content = main_match.group(1)
-                        if "Discount already used" in main_content or "student ID has already been used" in main_content:
-                            self.log("This verification link has already been used")
-                            discount_already_used = True
-                            break
-                    
-                    is_verification_successful = False
-                    success_patterns = [
-                        r"You['']re verified as a student until:",
-                        r"You are verified as a student until:",
-                        r"verified as a student until",
-                        r"<h1[^>]*>You['']re verified as a student",
-                        r"student status is verified",
-                        r"encore-premium-student-set"
-                    ]
-                    
-                    for pattern in success_patterns:
-                        if re.search(pattern, html_content, re.IGNORECASE):
-                            is_verification_successful = True
-                            break
-                    
-                    if is_verification_successful:
-                        date_matches = re.search(r"until:?\s*(\d{2}/\d{2}/\d{4})", html_content)
-                        if date_matches:
-                            verified_until = date_matches.group(1)
-                            self.log(f"Verified until: {verified_until}", success=True)
-                        else:
-                            self.log(f"Student verification successful!", success=True)
-                            
-                        self.update_status(account['email'], account['password'], is_student=True)
-                        verification_success = True
-                        break
-                    else:
-                        self.log(f"Verification pending ({try_num}/{max_retry})")
-                        time.sleep(5)
-                        
-                except Exception as e:
-                    self.log(f"Verification error: {str(e)} ({try_num}/{max_retry})")
+            return False
+        
+        verification_success = False
+        discount_already_used = False
+        
+        for try_num in range(1, max_retry + 1):
+            try:
+                session = self.setup_session(cookie_string)
+                
+                self.log(f"Step 1: Applying with ID: {verification_id[:8]}")
+                apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
+                response = session.get(apply_url, allow_redirects=True)
+                
+                self.log(f"Step 1: {response.status_code}")
+                if response.status_code not in [200, 301, 302, 307]:
+                    self.log(f"Step 1 failed ({try_num}/{max_retry})")
                     time.sleep(2)
-            
-            if discount_already_used:
-                self.mark_as_used()
-                self.log(f"Trying with a new link (attempt {link_attempt}/{max_link_attempts})")
+                    continue
+                
+                self.log("Step 2: Confirming verification")
+                confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
+                response = session.get(confirm_url, allow_redirects=True)
+                
+                self.log(f"Step 2: {response.status_code}")
+                if response.status_code not in [200, 301, 302, 307]:
+                    self.log(f"Step 2 failed ({try_num}/{max_retry})")
+                    time.sleep(2)
+                    continue
+                
+                self.log("Step 3: Checking verification status")
+                verify_url = "https://www.spotify.com/uk/student/verification/"
+                response = session.get(verify_url, allow_redirects=True)
+                self.log(f"Step 3: {response.status_code}")
+                
+                if response.status_code == 200 and "Congratulations" in response.text:
+                    verification_success = True
+                    break
+                
+                if response.status_code == 200 and ("already used" in response.text.lower() or "discount is already active" in response.text.lower()):
+                    discount_already_used = True
+                    break
+                
+                time.sleep(2)
+            except Exception as e:
+                self.log(f"Verification error: {str(e)}")
+                time.sleep(2)
                 continue
-                
-            if not verification_success:
-                self.log(f"Failed to verify after {max_retry} attempts")
-                self.return_link()
-                
-            return verification_success
-            
-        self.log(f"Exhausted {max_link_attempts} verification links, all used or failed")
+        
+        if verification_success:
+            self.log("Verification successful", success=True)
+            return True
+        if discount_already_used:
+            self.log("Discount already used")
+            return False
+        
+        if not verification_link:
+            self.return_link()
         return False
     
     def update_status(self, email, password, is_student=True):

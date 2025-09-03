@@ -35,8 +35,17 @@ def main():
 
         use_proxy = (os.getenv("USE_PROXY", "False").lower() == "true")
 
-        spotify = Spotify(process_id=0, use_proxy=use_proxy)
-        account = spotify.create()
+        # Silence noisy prints during creation so only final JSON is emitted
+        import contextlib
+        devnull = open(os.devnull, 'w')
+        try:
+            with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+                spotify = Spotify(process_id=0, use_proxy=use_proxy)
+                account = spotify.create()
+                # Build cookie header from session (no file I/O)
+                cookie_header = "".join([f"{c.name}={c.value}; " for c in spotify.session.cookies])
+        finally:
+            devnull.close()
         if not account:
             print(json.dumps({"success": False, "error": "Account creation failed"}))
             return 2
@@ -45,10 +54,14 @@ def main():
         is_student = False
         if trial_link:
             try:
-                with open(os.path.join(BASE_DIR, "student.txt"), "w", encoding="utf-8") as f:
-                    f.write(trial_link.strip() + "\n")
-                verifier = StudentVerifier(process_id=0, use_proxy=use_proxy)
-                is_student = bool(verifier.verify({"email": email, "password": password}))
+                # Silence verification logs too
+                devnull2 = open(os.devnull, 'w')
+                try:
+                    with contextlib.redirect_stdout(devnull2), contextlib.redirect_stderr(devnull2):
+                        verifier = StudentVerifier(process_id=0, use_proxy=use_proxy)
+                        is_student = bool(verifier.verify({"email": email, "password": password}, verification_link=trial_link, cookie_string=cookie_header))
+                finally:
+                    devnull2.close()
             except Exception:
                 is_student = False
 
