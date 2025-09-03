@@ -1,10 +1,10 @@
 module.exports = {
   apps: [
     {
-      name: 'spo',
+      name: 'spo-cli',
       cwd: __dirname,
       script: 'bash',
-      args: ['-lc', 'gunicorn -w 2 -b 127.0.0.1:5000 app:APP'],
+      args: ['-lc', 'while true; do sleep 1; done'],
       env: {
         BACKEND_API_KEY: 'pablocc@222',
         USE_PROXY: 'true',
@@ -13,7 +13,9 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '300M',
-      time: true
+      time: true,
+      instances: 3,
+      exec_mode: 'cluster'
     },
     {
       name: 'spo-cookie-cleaner',
