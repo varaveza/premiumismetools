@@ -475,8 +475,6 @@ class Spotify:
         return False
     
     def save(self, account, is_student=False):
-        os.makedirs("cookies", exist_ok=True)
-        
         # Optionally write account files based on env flag
         if os.getenv("WRITE_ACCOUNT_FILES", "true").lower() == "true":
             target_file = "akunstudent.txt" if is_student else "akunbiasa.txt"
@@ -493,12 +491,21 @@ class Spotify:
             with open("akun.txt", "a") as f:
                 f.write(f"{account['email']}|{account['password']}|{status}\n")
         
-        cookie_header = ""
-        for cookie in self.session.cookies:
-            cookie_header += f"{cookie.name}={cookie.value}; "
-        
-        with open(f"cookies/{account['email']}.txt", "w") as f:
-            f.write(cookie_header)
+        # Only save cookies if enabled
+        if os.getenv("SAVE_COOKIES", "true").lower() != "false":
+            try:
+                os.makedirs("cookies", exist_ok=True)
+                
+                cookie_header = ""
+                for cookie in self.session.cookies:
+                    cookie_header += f"{cookie.name}={cookie.value}; "
+                
+                with open(f"cookies/{account['email']}.txt", "w") as f:
+                    f.write(cookie_header)
+                    
+                self.log(f"Cookies saved for {account['email']}")
+            except Exception as e:
+                self.log(f"Warning: Could not save cookies: {e}")
         
         self.log(f"Saved: {account['email']}")
     
