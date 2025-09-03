@@ -205,7 +205,7 @@ class Spotify:
         
         username = (username_prefix + random_numbers)[:12]
 
-        display_name = self.default_name if self.default_name else username.title()
+        display_name = "Premiumisme"
             
         return {
             "email": f"{username}@{self.domain}",
