@@ -9,13 +9,12 @@ function load_config(): array {
     // Simple env loader; for production you can switch to vlucas/phpdotenv
     $config = [
         'SQLITE_PATH' => __DIR__ . '/../spo_creator.db',
-        'FLASK_API' => env('FLASK_API', 'http://127.0.0.1:5111/api/create'),
-        // Accept either FLASK_BACKEND_API_KEY or BACKEND_API_KEY
-        'FLASK_BACKEND_API_KEY' => env('FLASK_BACKEND_API_KEY', env('BACKEND_API_KEY', '')),
+        // CLI mode - no more Flask
+        'CLI_PATH' => __DIR__ . '/py/cli_create.py',
         'SPOTIFY_DOMAIN' => env('SPOTIFY_DOMAIN', ''),
         'SPOTIFY_PASSWORD' => env('SPOTIFY_PASSWORD', ''),
         // Allow disabling PHP-side rate limit (useful for localhost/dev)
-        'DISABLE_RATE_LIMIT' => strtolower((string) env('DISABLE_RATE_LIMIT', 'true')) === 'true',
+        'DISABLE_RATE_LIMIT' => strtolower((string) env('DISABLE_RATE_LIMIT', 'false')) === 'true',
     ];
     return $config;
 }

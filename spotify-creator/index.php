@@ -59,26 +59,7 @@ function getDailyCount(PDO $pdo, string $date): int {
     return $row ? (int)$row['count'] : 0;
 }
 
-function callFlask(array $payload, array $cfg): array {
-    $ch = curl_init($cfg['FLASK_API']);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'X-API-Key: ' . $cfg['FLASK_BACKEND_API_KEY']
-        ],
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 180,
-    ]);
-    $resp = curl_exec($ch);
-    $err  = curl_error($ch);
-    curl_close($ch);
-    if ($err) return ['success' => false, 'error' => $err];
-    $data = json_decode($resp, true);
-    if (!is_array($data)) return ['success' => false, 'error' => 'Invalid backend response'];
-    return $data;
-}
+
 
 // --- Bootstrap ---
 $cfg = load_config();
@@ -121,9 +102,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password' => $password,
                 'trial_link' => trim($_POST['trial_link'] ?? '')
             ];
-            $result = callFlask($payload, $cfg);
-            if (!empty($result['success'])) {
+            // Direct CLI call - no more Flask
+            $py = escapeshellcmd('python');
+            $cli = escapeshellarg(__DIR__ . '/py/cli_create.py');
+            $argDomain = escapeshellarg($domain);
+            $argPassword = escapeshellarg($password);
+            $argTrial = escapeshellarg(trim($_POST['trial_link'] ?? ''));
+            $cmd = $py . ' ' . $cli . ' ' . $argDomain . ' ' . $argPassword;
+            if (!empty($_POST['trial_link'])) { $cmd .= ' ' . $argTrial; }
+            $output = shell_exec($cmd . ' 2>&1');
+            $json = json_decode($output, true);
+            if (is_array($json) && !empty($json['success'])) {
                 recordSubmission($pdo, $ip, $uaHash, $today);
+                $result = $json;
+            } else {
+                // Provide detailed debug info to diagnose local failures
+                $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
+                $result['debug'] = [
+                    'cmd' => $cmd,
+                    'stdout' => $output,
+                    'json_error' => function_exists('json_last_error_msg') ? json_last_error_msg() : 'n/a',
+                    'python_path' => trim(shell_exec('which python3') ?: ''),
+                ];
             }
         }
     }
@@ -201,6 +201,11 @@ include '../includes/header.php';
               <?php else: ?>
                 <h3 class="text-lg mb-2">Gagal</h3>
                 <p class="text-sm">Gagal, silakan coba lagi.</p>
+                <?php if (!empty($result['debug'])): ?>
+                <pre style="white-space:pre-wrap; font-size:12px; opacity:.8; margin-top:8px; border:1px solid var(--glass-border); padding:8px; border-radius:8px; background:rgba(0,0,0,.25); color:var(--text-light);">
+<?php echo htmlspecialchars(print_r($result['debug'], true), ENT_QUOTES, 'UTF-8'); ?>
+                </pre>
+                <?php endif; ?>
                 <script>
                   // Stop timer on failure too
                   (function(){
