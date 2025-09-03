@@ -42,8 +42,12 @@ def main():
             with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
                 spotify = Spotify(process_id=0, use_proxy=use_proxy)
                 account = spotify.create()
-                # Build cookie header from session (no file I/O)
-                cookie_header = "".join([f"{c.name}={c.value}; " for c in spotify.session.cookies])
+                # Get cookies from memory (no file I/O)
+                cookies_data = getattr(spotify, 'cookies_json', {})
+                cookie_header = ""
+                if cookies_data and 'cookies' in cookies_data:
+                    for name, value in cookies_data['cookies'].items():
+                        cookie_header += f"{name}={value}; "
         finally:
             devnull.close()
         if not account:

@@ -112,6 +112,7 @@ class Spotify:
         self.install_id = self._random_id()
         self.submit_id = self._random_id()
         self.login_token = None
+        self.cookies_json = {} # Initialize for in-memory cookie storage
         
     def _init_session(self):
         session = tls_client.Session(client_identifier="chrome_113", random_tls_extension_order=True)
@@ -491,21 +492,23 @@ class Spotify:
             with open("akun.txt", "a") as f:
                 f.write(f"{account['email']}|{account['password']}|{status}\n")
         
-        # Only save cookies if enabled
+        # Store cookies as JSON in memory instead of files
         if os.getenv("SAVE_COOKIES", "true").lower() != "false":
             try:
-                os.makedirs("cookies", exist_ok=True)
+                cookies_data = {
+                    "email": account['email'],
+                    "cookies": {},
+                    "timestamp": time.time()
+                }
                 
-                cookie_header = ""
                 for cookie in self.session.cookies:
-                    cookie_header += f"{cookie.name}={cookie.value}; "
+                    cookies_data["cookies"][cookie.name] = cookie.value
                 
-                with open(f"cookies/{account['email']}.txt", "w") as f:
-                    f.write(cookie_header)
-                    
-                self.log(f"Cookies saved for {account['email']}")
+                # Store in memory (self.cookies_json) instead of file
+                self.cookies_json = cookies_data
+                self.log(f"Cookies stored in memory for {account['email']}")
             except Exception as e:
-                self.log(f"Warning: Could not save cookies: {e}")
+                self.log(f"Warning: Could not store cookies: {e}")
         
         self.log(f"Saved: {account['email']}")
     
@@ -642,14 +645,13 @@ class StudentVerifier:
     
     def setup_session(self, cookie_string):
         session = tls_client.Session(client_identifier="chrome_113", random_tls_extension_order=True)
-        
         session.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+            "User-Agent": Spotify()._random_ua(),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Language": "en-GB,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
-            "Referer": "https://www.spotify.com/",
-            "Cookie": cookie_string
+            "Referer": "https://www.spotify.com/uk/",
+            "Cookie": (cookie_string + "; sp_country=GB").strip()
         }
         
         if self.use_proxy and self.proxy:
@@ -672,6 +674,11 @@ class StudentVerifier:
     def verify(self, account, max_retry=3, verification_link=None, cookie_string=None):
         max_link_attempts = 5
         
+        # Require cookie_string to avoid filesystem usage
+        if not cookie_string:
+            self.log("Missing cookie string for verification")
+            return False
+        
         # Use provided verification_link if available; otherwise fetch one
         if verification_link:
             selected_link = verification_link
@@ -683,18 +690,6 @@ class StudentVerifier:
                     break
             if not selected_link:
                 return False
-        
-        # Use provided cookie_string if available; otherwise read from cookies file
-        if not cookie_string:
-            cookie_file = f"cookies/{account['email']}.txt"
-            if not os.path.exists(cookie_file):
-                self.log(f"No cookie file for {account['email']}")
-                # Return link only if we fetched it from pool
-                if not verification_link:
-                    self.return_link()
-                return False
-            with open(cookie_file, "r") as f:
-                cookie_string = f.read().strip()
         
         parsed_url = urlparse(selected_link)
         query = parsed_url.query
@@ -717,7 +712,7 @@ class StudentVerifier:
                 session = self.setup_session(cookie_string)
                 
                 self.log(f"Step 1: Applying with ID: {verification_id[:8]}")
-                apply_url = f"https://www.spotify.com/student/apply/sheerid-program?verificationId={verification_id}"
+                apply_url = f"https://www.spotify.com/uk/student/apply/sheerid-program?verificationId={verification_id}"
                 response = session.get(apply_url, allow_redirects=True)
                 
                 self.log(f"Step 1: {response.status_code}")
@@ -741,7 +736,7 @@ class StudentVerifier:
                 response = session.get(verify_url, allow_redirects=True)
                 self.log(f"Step 3: {response.status_code}")
                 
-                if response.status_code == 200 and "Congratulations" in response.text:
+                if response.status_code == 200 and ("Congratulations" in response.text or "You're verified" in response.text or "you’re verified" in response.text):
                     verification_success = True
                     break
                 
@@ -1046,16 +1041,21 @@ class SpotifyLogin:
             return False
     
     def save_cookies(self):
-        os.makedirs("cookies", exist_ok=True)
-        
         cookie_header = ""
         for cookie in self.session.cookies:
             cookie_header += f"{cookie.name}={cookie.value}; "
-            
-        with open(f"cookies/{self.email}.txt", "w") as f:
-            f.write(cookie_header)
-            
-        self.log(f"Cookies saved for {self.email}")
+        
+        # Also keep an in-memory JSON copy for other flows
+        try:
+            self.cookies_json = {
+                "email": getattr(self, "email", None),
+                "cookies": {c.name: c.value for c in self.session.cookies},
+                "timestamp": time.time()
+            }
+        except Exception:
+            pass
+        
+        self.log("Cookies prepared in memory")
         return cookie_header
 
 
