@@ -4,7 +4,7 @@ module.exports = {
       name: 'spo',
       cwd: __dirname,
       script: 'bash',
-      args: ['-lc', 'gunicorn -w 2 -b 127.0.0.1:5111 app:APP'],
+      args: ['-lc', 'gunicorn -w 2 -b 127.0.0.1:5000 app:APP'],
       env: {
         BACKEND_API_KEY: 'pablocc@222',
         USE_PROXY: 'true',
