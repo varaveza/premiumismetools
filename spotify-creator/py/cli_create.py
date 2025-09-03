@@ -26,6 +26,12 @@ def main():
         # Pass credentials via env for compatibility with existing code
         os.environ["DOMAIN"] = domain
         os.environ["PASSWORD"] = password
+        
+        # DISABLE account file writing - prevent permission errors
+        os.environ["WRITE_ACCOUNT_FILES"] = "false"
+        
+        # DISABLE cookie saving - prevent permission errors  
+        os.environ["SAVE_COOKIES"] = "false"
 
         use_proxy = (os.getenv("USE_PROXY", "False").lower() == "true")
 

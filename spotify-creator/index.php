@@ -182,14 +182,22 @@ include '../includes/header.php';
             </div>
           </div>
           <?php if ($result): ?>
-            <div class="result-card mt-6">
-              <?php if (!empty($result['success'])): ?>
-                <h3 class="text-lg mb-2">Akun Berhasil Dibuat</h3>
-                <div class="space-y-2 text-sm">
-                  <div><strong>Email:</strong> <?php echo htmlspecialchars($result['email'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
-                  <div><strong>Password:</strong> <?php echo htmlspecialchars($result['display_password'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
-                  <div><strong>Status:</strong> <?php echo htmlspecialchars($result['status'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
-                </div>
+            <?php if (!empty($result['success'])): ?>
+                             <!-- Success: Show complete info -->
+               <div class="result-card mt-6 bg-green-500/10 border-green-500/20">
+                 <div class="flex items-center gap-3 mb-3">
+                   <div class="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                     <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                     </svg>
+                   </div>
+                   <h3 class="text-lg font-semibold text-green-500">Akun Berhasil Dibuat</h3>
+                 </div>
+                 <div class="space-y-2 text-sm text-green-400">
+                   <div><strong>Email:</strong> <?php echo htmlspecialchars($result['email'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                   <div><strong>Password:</strong> <?php echo htmlspecialchars($result['display_password'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                   <div><strong>Status:</strong> <?php echo htmlspecialchars($result['status'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                 </div>
                 <script>
                   // Mark done and stop timer
                   (function(){
@@ -198,24 +206,18 @@ include '../includes/header.php';
                     if (window.__elapsedTimer) { clearInterval(window.__elapsedTimer); window.__elapsedTimer = null; }
                   })();
                 </script>
-              <?php else: ?>
-                <h3 class="text-lg mb-2">Gagal</h3>
-                <p class="text-sm">Gagal, silakan coba lagi.</p>
-                <?php if (!empty($result['debug'])): ?>
-                <pre style="white-space:pre-wrap; font-size:12px; opacity:.8; margin-top:8px; border:1px solid var(--glass-border); padding:8px; border-radius:8px; background:rgba(0,0,0,.25); color:var(--text-light);">
-<?php echo htmlspecialchars(print_r($result['debug'], true), ENT_QUOTES, 'UTF-8'); ?>
-                </pre>
-                <?php endif; ?>
-                <script>
-                  // Stop timer on failure too
-                  (function(){
-                    var modal = document.getElementById('processingModal');
-                    if (modal) modal.style.display = 'none';
-                    if (window.__elapsedTimer) { clearInterval(window.__elapsedTimer); window.__elapsedTimer = null; }
-                  })();
-                </script>
-              <?php endif; ?>
-            </div>
+              </div>
+            <?php else: ?>
+              <!-- Error: Show toast only, no card -->
+              <script>
+                // Stop timer on failure
+                (function(){
+                  var modal = document.getElementById('processingModal');
+                  if (modal) modal.style.display = 'none';
+                  if (window.__elapsedTimer) { clearInterval(window.__elapsedTimer); window.__elapsedTimer = null; }
+                })();
+              </script>
+            <?php endif; ?>
           <?php endif; ?>
         </div>
       </div>
@@ -245,13 +247,27 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php if ($result && (!($result['success'] ?? false)) && (($result['error'] ?? '') === 'Daily global limit reached (100)')): ?>
+<?php if ($result && (!($result['success'] ?? false))): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    var error = '<?php echo addslashes($result['error'] ?? ''); ?>';
+    
     if (typeof showToast === 'function') {
-        showToast('Sudah 100 nyet, besok lagi.', 'error');
+        if (error.includes('Daily global limit reached (100)')) {
+            showToast('Dah limit daily bang, besok lagi.', 'error');
+        } else if (error.includes('Daily limit reached for this IP/UA')) {
+            showToast('Kamu sudah buat akun hari ini, besok lagi ya!', 'warning');
+        } else {
+            showToast('Gagal buat akun, silakan coba lagi.', 'error');
+        }
     } else {
-        alert('Sudah 100 nyet, besok lagi.');
+        if (error.includes('Daily global limit reached (100)')) {
+            alert('Dah limit daily bang, besok lagi.');
+        } else if (error.includes('Daily limit reached for this IP/UA')) {
+            alert('Kamu sudah buat akun hari ini, besok lagi ya!');
+        } else {
+            alert('Gagal buat akun, silakan coba lagi.');
+        }
     }
 });
 </script>

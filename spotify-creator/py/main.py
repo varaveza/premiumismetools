@@ -1123,7 +1123,9 @@ def login_and_verify_task(process_id):
     if not login_success:
         return False
         
-    login.save_cookies()
+    # Only save cookies if enabled
+    if os.getenv("SAVE_COOKIES", "true").lower() != "false":
+        login.save_cookies()
     
     # Verify as student
     verifier = StudentVerifier(process_id=process_id, use_proxy=use_proxy)
