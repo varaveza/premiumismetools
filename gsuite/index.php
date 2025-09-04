@@ -41,6 +41,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
 
             $len = max(1, strlen($letters));
 
+            // If username contains trailing digits (sequential mode), do NOT alter the prefix on the server.
+            // This preserves input like "tes1" -> "tes1" even if "tes" was used before.
+            if ($digits !== '') {
+                $resultUsernames[] = $letters . $digits;
+                continue;
+            }
+
             // Try to reserve current token, otherwise generate a new unique token with same length
             $token = $letters;
             $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token) VALUES (?)');
@@ -273,6 +280,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
 
 <script>
 let generatedData = [];
+let currentSequentialPrefix = null; // keep one prefix per run for sequential mode
 
 document.addEventListener('DOMContentLoaded', () => {
     const inputs = ['firstName', 'lastName', 'alphabetLength', 'usernamePrefix', 'domain', 'quantity', 'password'];
@@ -347,9 +355,17 @@ function switchPrefixTab(type) {
     if (type === 'manual') {
         manualTab.classList.remove('hidden');
         manualButton.classList.add('active');
+        // switching to manual clears current random prefix state
+        currentSequentialPrefix = null;
     } else if (type === 'random') {
         randomTab.classList.remove('hidden');
         randomButton.classList.add('active');
+        // ensure a random prefix exists and is reused
+        if (!currentSequentialPrefix) {
+            currentSequentialPrefix = generateRandomAlphabet(5);
+            document.getElementById('randomPrefixText').textContent = currentSequentialPrefix;
+            document.getElementById('randomPrefixDisplay').classList.remove('hidden');
+        }
     }
     validateForm();
 }
@@ -365,27 +381,29 @@ function generateRandomAlphabet(length) {
 
 function generateRandomPrefix() {
     const randomPrefix = generateRandomAlphabet(5);
+    currentSequentialPrefix = randomPrefix;
     document.getElementById('randomPrefixText').textContent = randomPrefix;
     document.getElementById('randomPrefixDisplay').classList.remove('hidden');
     showToast('Random prefix berhasil dibuat!');
 }
 
-function generateUsername(index, usernameType) {
+function generateUsername(index, usernameType, fixedPrefix) {
     if (usernameType === 'alphabet') {
         const length = parseInt(document.getElementById('alphabetLength').value) || 5;
         return generateRandomAlphabet(length);
     } else if (usernameType === 'sequential') {
-        let prefix = 'user';
-        
-        // Check if manual tab is active
-        if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
-            prefix = document.getElementById('usernamePrefix').value.trim() || 'user';
-        } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
-            // Use random prefix if available, otherwise generate new one
-            const randomPrefixText = document.getElementById('randomPrefixText').textContent;
-            prefix = randomPrefixText || generateRandomAlphabet(5);
+        // Use fixed prefix if provided (ensures same prefix for all indices in one run)
+        let prefix = fixedPrefix;
+        if (!prefix) {
+            prefix = 'user';
+            // Check if manual tab is active
+            if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
+                prefix = document.getElementById('usernamePrefix').value.trim() || 'user';
+            } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
+                const randomPrefixText = document.getElementById('randomPrefixText').textContent;
+                prefix = randomPrefixText || generateRandomAlphabet(5);
+            }
         }
-        
         return `${prefix}${index}`;
     }
 }
@@ -436,9 +454,30 @@ function generateData() {
     }
     
     generatedData = [];
-    
+
+    // Compute a single prefix for sequential mode so all emails share the same base
+    let sequentialPrefix = null;
+    if (usernameType === 'sequential') {
+        if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
+            sequentialPrefix = document.getElementById('usernamePrefix').value.trim() || 'user';
+            currentSequentialPrefix = sequentialPrefix;
+        } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
+            // prefer previously generated random prefix
+            sequentialPrefix = currentSequentialPrefix || document.getElementById('randomPrefixText').textContent || generateRandomAlphabet(5);
+            currentSequentialPrefix = sequentialPrefix;
+            // reflect in UI when auto-generated
+            if (!document.getElementById('randomPrefixText').textContent) {
+                document.getElementById('randomPrefixText').textContent = sequentialPrefix;
+                document.getElementById('randomPrefixDisplay').classList.remove('hidden');
+            }
+        } else {
+            sequentialPrefix = currentSequentialPrefix || 'user';
+            currentSequentialPrefix = sequentialPrefix;
+        }
+    }
+
     for (let i = 1; i <= quantity; i++) {
-        const username = generateUsername(i, usernameType);
+        const username = generateUsername(i, usernameType, sequentialPrefix);
         const email = `${username}@${domain}`;
         
         generatedData.push({
@@ -449,26 +488,34 @@ function generateData() {
         });
     }
 
-    // Reserve unique letter tokens server-side so future runs avoid duplicates
-    const payload = { items: generatedData.map(d => ({ username: d.email.split('@')[0] })) };
-    fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        .then(r => r.json())
-        .then(res => {
-            if (res && res.success && Array.isArray(res.usernames)) {
-                const domainFinal = document.getElementById('domain').value.trim();
-                generatedData = generatedData.map((d, idx) => ({ ...d, email: `${res.usernames[idx]}@${domainFinal}` }));
-            }
-            displayResults();
-            document.getElementById('main-section').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-            showToast(`${generatedData.length} data berhasil dibuat!`);
-        })
-        .catch(() => {
-            displayResults();
-            document.getElementById('main-section').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-            showToast(`${generatedData.length} data berhasil dibuat!`);
-        });
+    // Only reserve unique tokens in alphabet mode; keep prefix+number intact in sequential mode
+    if (usernameType === 'alphabet') {
+        const payload = { items: generatedData.map(d => ({ username: d.email.split('@')[0] })) };
+        fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && Array.isArray(res.usernames)) {
+                    const domainFinal = document.getElementById('domain').value.trim();
+                    generatedData = generatedData.map((d, idx) => ({ ...d, email: `${res.usernames[idx]}@${domainFinal}` }));
+                }
+                displayResults();
+                document.getElementById('main-section').classList.add('hidden');
+                document.getElementById('result-section').classList.remove('hidden');
+                showToast(`${generatedData.length} data berhasil dibuat!`);
+            })
+            .catch(() => {
+                displayResults();
+                document.getElementById('main-section').classList.add('hidden');
+                document.getElementById('result-section').classList.remove('hidden');
+                showToast(`${generatedData.length} data berhasil dibuat!`);
+            });
+    } else {
+        // Sequential: no server mutation; show results directly
+        displayResults();
+        document.getElementById('main-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        showToast(`${generatedData.length} data berhasil dibuat!`);
+    }
 }
 
 function displayResults() {
@@ -608,6 +655,7 @@ function clearForm() {
     // Clear random prefix display
     document.getElementById('randomPrefixDisplay').classList.add('hidden');
     document.getElementById('randomPrefixText').textContent = '';
+    currentSequentialPrefix = null;
     
     validateForm();
 }
