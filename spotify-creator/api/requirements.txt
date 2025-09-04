@@ -1,0 +1,28 @@
+# Core dependencies
+Flask==2.3.3
+gunicorn==21.2.0
+python-dotenv==1.0.0
+
+# HTTP client
+tls-client==1.0.2
+requests==2.31.0
+
+# Data generation
+faker==19.6.2
+
+# Database
+# sqlite3 is built-in with Python
+
+# Additional utilities
+uuid
+concurrent.futures
+threading
+json
+re
+random
+string
+time
+sys
+os
+datetime
+urllib.parse

@@ -9,14 +9,15 @@ function load_config(): array {
     // Hardcoded config values instead of relying on .env file
     $config = [
         'SQLITE_PATH' => __DIR__ . '/../spo_creator.db',
-        // CLI mode - no more Flask
-        'CLI_PATH' => __DIR__ . '/py/cli_create.py',
         'SPOTIFY_DOMAIN' => 'motionisme.com',  // Hardcoded default
         'SPOTIFY_PASSWORD' => 'Premium@123',   // Hardcoded default
         // Allow disabling PHP-side rate limit (useful for localhost/dev)
-        'DISABLE_RATE_LIMIT' => false,  // Hardcoded to false (rate limit enabled)
-        // Control whether to show verbose debug info in UI (default: hidden)
-        'SHOW_DEBUG' => true,  // Hardcoded to true for debugging
+        'DISABLE_RATE_LIMIT' => false,  // Rate limit enabled - 1 user per day
+        // Control whether to show verbose debug info in UI (default: hidden for security)
+        'SHOW_DEBUG' => false,  // Hardcoded to false for production security
+        // API configuration for api-index.php
+        'API_ENDPOINT' => 'http://localhost:5112/api/create',  // API endpoint URL
+        'API_KEY' => '',  // Optional API key for authentication
     ];
     return $config;
 }
