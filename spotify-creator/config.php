@@ -13,9 +13,11 @@ function load_config(): array {
         'SPOTIFY_PASSWORD' => 'Premium@123',   // Hardcoded default
         // Allow disabling PHP-side rate limit (useful for localhost/dev)
         'DISABLE_RATE_LIMIT' => false,  // Rate limit enabled - 1 user per day
+        // Allow disabling daily limit (useful for localhost/dev)
+        'DISABLE_DAILY_LIMIT' => false,  // Daily limit enabled - 100 accounts per day
         // Control whether to show verbose debug info in UI (default: hidden for security)
         'SHOW_DEBUG' => false,  // Hardcoded to false for production security
-        // API configuration for api-index.php
+        // API configuration for index.php
         'API_ENDPOINT' => 'http://localhost:5112/api/create',  // API endpoint URL
         'API_KEY' => '',  // Optional API key for authentication
     ];

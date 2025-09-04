@@ -39,29 +39,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $uaHash = hash('sha256', $ua);
     $today = date('Y-m-d');
     
-    // Check rate limiting
+    // Check rate limiting - 1 user (IP + UA) per day
     if (!$cfg['DISABLE_RATE_LIMIT']) {
-        // Check global limit
-        $stmt = $pdo->prepare("SELECT count FROM daily_submissions WHERE date = ?");
-        $stmt->execute([$today]);
-        $dailyCount = $stmt->fetchColumn() ?: 0;
-        
-        if ($dailyCount >= 100) {
-            $result = ['success' => false, 'error' => 'Daily global limit reached (100)'];
-        } else {
-            // Check IP limit
-            $stmt = $pdo->prepare("SELECT 1 FROM ip_submissions WHERE ip = ? AND ua_hash = ? AND date(submitted_at) = ?");
-            $stmt->execute([$ip, $uaHash, $today]);
-            if ($stmt->fetchColumn()) {
-                $result = ['success' => false, 'error' => 'Daily limit reached for this IP/UA'];
-            }
+        // Check if this IP + UA combination already submitted today
+        $stmt = $pdo->prepare("SELECT 1 FROM ip_submissions WHERE ip = ? AND ua_hash = ? AND date(submitted_at) = ?");
+        $stmt->execute([$ip, $uaHash, $today]);
+        if ($stmt->fetchColumn()) {
+            $result = ['success' => false, 'error' => 'Anda sudah membuat akun hari ini. Coba lagi besok.'];
         }
     }
     
-    // If not rate limited, create account
+    // Check daily limit - max 100 accounts per day
+    if (!$result && !$cfg['DISABLE_DAILY_LIMIT']) {
+        $stmt = $pdo->prepare("SELECT count FROM daily_submissions WHERE date = ?");
+        $stmt->execute([$today]);
+        $daily_count = $stmt->fetchColumn() ?: 0;
+        
+        if ($daily_count >= 100) {
+            $result = ['success' => false, 'error' => 'Kuota harian sudah habis (100 akun/hari). Coba lagi besok.'];
+        }
+    }
+    
+    // If not rate limited, create account via API
     if (!$result) {
         $domain = trim($_POST['domain'] ?? '');
         $password = trim($_POST['password'] ?? '');
+        $trial_link = trim($_POST['trial_link'] ?? '');
         
         if (empty($domain)) $domain = $cfg['SPOTIFY_DOMAIN'];
         if (empty($password)) $password = $cfg['SPOTIFY_PASSWORD'];
@@ -69,63 +72,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($domain) || empty($password)) {
             $result = ['success' => false, 'error' => 'Missing domain or password'];
         } else {
-            // Call Python CLI
-            $py = escapeshellcmd('python');
-            $argDomain = escapeshellarg($domain);
-            $argPassword = escapeshellarg($password);
-            $argTrial = escapeshellarg(trim($_POST['trial_link'] ?? ''));
+            // Call API
+            $api_url = $cfg['API_ENDPOINT'] ?? 'http://localhost:5111/api/create';
             
-            // Detect OS and set environment variables accordingly
-            $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+            $post_data = [
+                'domain' => $domain,
+                'password' => $password
+            ];
             
-            if ($isWindows) {
-                // Windows: use set command
-                $workdir = str_replace('/', '\\', __DIR__ . '/py');
-                $cli_rel = 'cli_create.py';
-                $env = 'set SAVE_COOKIES=true && set DEBUG_CREATION=true && set DEBUG_VERIFICATION=true && ';
-                $cmd = 'cd /d ' . escapeshellarg($workdir) . ' && ' . $env . $py . ' ' . $cli_rel . ' ' . $argDomain . ' ' . $argPassword;
-            } else {
-                // Linux/Unix: use export
-                $workdir = escapeshellarg(__DIR__ . '/py');
-                $cli_rel = escapeshellarg('cli_create.py');
-                $env = 'SAVE_COOKIES=true DEBUG_CREATION=true DEBUG_VERIFICATION=true ';
-                $cmd = 'cd ' . $workdir . ' && ' . $env . $py . ' ' . $cli_rel . ' ' . $argDomain . ' ' . $argPassword;
+            if (!empty($trial_link)) {
+                $post_data['trial_link'] = $trial_link;
             }
             
-            if (!empty($_POST['trial_link'])) {
-                $cmd .= ' ' . $argTrial;
+            // Prepare API request
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $api_url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 minutes timeout
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+            
+            // Add API key if configured
+            if (!empty($cfg['API_KEY'])) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                    'X-API-Key: ' . $cfg['API_KEY']
+                ]);
             }
             
-            $output = shell_exec($cmd . ' 2>&1');
-            $json = json_decode($output, true);
+            $api_response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
             
-            if (is_array($json) && !empty($json['success'])) {
-                // Record submission
-                $stmt = $pdo->prepare("INSERT INTO ip_submissions (ip, ua_hash, submitted_at) VALUES (?, ?, datetime('now'))");
-                $stmt->execute([$ip, $uaHash]);
-                
-                $pdo->prepare("INSERT INTO daily_submissions (date, count) VALUES (?, 1)
-                               ON CONFLICT(date) DO UPDATE SET count = count + 1")
-                    ->execute([$today]);
-                
-                $result = $json;
-                // Remove debug info from user-facing result for security
-                unset($result['debug']);
-                // Mark that we attempted student verification if a trial link was provided
-                $result['trial_attempted'] = !empty($_POST['trial_link']);
-                $result['display_password'] = $password;
+            if ($curl_error) {
+                $result = ['success' => false, 'error' => 'API connection failed: ' . $curl_error];
             } else {
-                $result = $json ?: ['success' => false, 'error' => 'CLI execution failed'];
-                // Add debug info
-                $result['debug'] = [
-                    'command' => $cmd,
-                    'output' => $output,
-                    'json_error' => json_last_error_msg(),
-                    'python_path' => $isWindows ? trim(shell_exec('where python 2>&1') ?: 'not found') : trim(shell_exec('which python 2>&1') ?: 'not found'),
-                    'cli_exists' => file_exists(__DIR__ . '/py/cli_create.py') ? 'yes' : 'no',
-                    'os' => $isWindows ? 'Windows' : 'Linux/Unix'
-                ];
-                $result['trial_attempted'] = !empty($_POST['trial_link']);
+                $json = json_decode($api_response, true);
+                
+                if (is_array($json) && !empty($json['success'])) {
+                    // Record submission
+                    $stmt = $pdo->prepare("INSERT INTO ip_submissions (ip, ua_hash, submitted_at) VALUES (?, ?, datetime('now'))");
+                    $stmt->execute([$ip, $uaHash]);
+                    
+                    $pdo->prepare("INSERT INTO daily_submissions (date, count) VALUES (?, 1)
+                                   ON CONFLICT(date) DO UPDATE SET count = count + 1")
+                        ->execute([$today]);
+                    
+                    $result = $json;
+                    // Remove debug info from user-facing result for security
+                    unset($result['debug']);
+                    // Mark that we attempted student verification if a trial link was provided
+                    $result['trial_attempted'] = !empty($trial_link);
+                    $result['display_password'] = $password;
+                } else {
+                    $result = $json ?: ['success' => false, 'error' => 'API call failed'];
+                    // Add debug info
+                    $result['debug'] = [
+                        'api_url' => $api_url,
+                        'http_code' => $http_code,
+                        'response' => $api_response,
+                        'json_error' => json_last_error_msg(),
+                        'post_data' => $post_data
+                    ];
+                    $result['trial_attempted'] = !empty($trial_link);
+                }
             }
         }
     }
@@ -145,7 +162,7 @@ if (isset($_SESSION['result'])) {
 }
 
 // Include header
-$page_title = 'Spotify Creator';
+$page_title = 'Spotify Creator (API)';
 $current_page = 'spo';
 $base_prefix = '../';
 include '../includes/header.php';
@@ -153,7 +170,7 @@ include '../includes/header.php';
 
 <div class="content-wrapper">
     <div class="content-section">
-        <h2>Spotify Creator</h2>
+        <h2>Spotify Creator (API)</h2>
         
         <form method="post" class="grid grid-cols-1 gap-4">
             <div>
@@ -221,7 +238,7 @@ include '../includes/header.php';
                                 <strong>Catatan:</strong> Link student sudah digunakan. Akun dibuat sebagai <em>basic</em>.
                             </div>
                         <?php endif; ?>
-                        <?php if (!empty($result['trial_attempted']) && !$discountUsed && ($result['status'] ?? '') === 'basic'): ?>
+                        <?php if (!empty($result['trial_attempted']) && !$discountUsed && ($result['status'] ?? '') === 'REGULAR'): ?>
                             <div class="mt-2 text-yellow-400">
                                 <strong>Catatan:</strong> Verifikasi student dicoba, namun tidak terkonfirmasi. Link mungkin tidak valid/expired atau cookies login tidak sesuai.
                             </div>
@@ -291,5 +308,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-
