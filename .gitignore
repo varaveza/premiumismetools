@@ -51,3 +51,10 @@ sessions/
 # Cache files
 cache/
 *.cache
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Local database files should not be committed

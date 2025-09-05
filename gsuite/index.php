@@ -17,7 +17,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
         $dbPath = __DIR__ . '/gsuite_unique.db';
         $pdo = new PDO('sqlite:' . $dbPath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec("CREATE TABLE IF NOT EXISTS used_letter_tokens (token TEXT PRIMARY KEY)");
+        
+        // Drop old table if exists and create new one with domain support
+        $pdo->exec("DROP TABLE IF EXISTS used_letter_tokens");
+        $pdo->exec("CREATE TABLE used_letter_tokens (token TEXT, domain TEXT, PRIMARY KEY (token, domain))");
+
+        $domain = $data['domain'] ?? '';
+        if ($domain === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Domain is required']);
+            exit;
+        }
 
         $resultUsernames = [];
         foreach ($data['items'] as $item) {
@@ -50,11 +60,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
 
             // Try to reserve current token, otherwise generate a new unique token with same length
             $token = $letters;
-            $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token) VALUES (?)');
+            $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token, domain) VALUES (?, ?)');
             $attempts = 0;
             while (true) {
                 $attempts++;
-                $stmt->execute([$token]);
+                $stmt->execute([$token, $domain]);
                 if ($stmt->rowCount() === 1) {
                     // Reserved successfully
                     break;
@@ -69,6 +79,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
                     echo json_encode(['success' => false, 'error' => 'Too many collisions']);
                     exit;
                 }
+            }
+            
+            // Don't store random prefixes in database to avoid conflicts
+            if (strlen($token) <= 5) {
+                $stmt = $pdo->prepare('DELETE FROM used_letter_tokens WHERE token = ? AND domain = ?');
+                $stmt->execute([$token, $domain]);
             }
 
             $resultUsernames[] = $token . $digits;
@@ -131,39 +147,31 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
                             type="number" 
                             id="alphabetLength" 
                             placeholder="Jumlah karakter (contoh: 5)"
-                            min="1" 
+                            min="5" 
                             max="20"
                             class="form-input"
                         >
                     </div>
 
                     <div id="sequential-tab" class="username-tab hidden">
-                        <div class="tab-button-group mb-3">
-                            <button id="tab-manual" class="tab-button active" onclick="switchPrefixTab('manual')">
-                                <i class="fas fa-edit mr-2"></i>Input Manual
-                            </button>
-                            <button id="tab-random" class="tab-button" onclick="switchPrefixTab('random')">
-                                <i class="fas fa-dice mr-2"></i>Random 5 Huruf
-                            </button>
-                        </div>
-                        <div id="manual-prefix-tab" class="prefix-tab">
+                        <input 
+                            type="number" 
+                            id="sequentialLength" 
+                            placeholder="Jumlah karakter (contoh: 5)"
+                            min="5" 
+                            max="20"
+                            class="form-input"
+                        >
+                        <div class="mt-3">
+                            <label for="usernameCount" class="block text-sm font-medium text-[var(--text-light)] opacity-80 mb-2">Jumlah Username Sama</label>
                             <input 
-                                type="text" 
-                                id="usernamePrefix" 
-                                placeholder="Prefix (contoh: premiumisme)"
+                                type="number" 
+                                id="usernameCount" 
+                                placeholder="Contoh: 100"
+                                min="1" 
+                                max="10000"
                                 class="form-input"
                             >
-                        </div>
-                        <div id="random-prefix-tab" class="prefix-tab hidden">
-                            <div class="bg-[var(--dark-peri)] border border-[var(--glass-border)] rounded-lg p-3">
-                                <p class="text-sm text-[var(--text-light)] opacity-70 mb-2">Prefix akan dibuat random 5 huruf</p>
-                                <button type="button" onclick="generateRandomPrefix()" class="btn btn-secondary w-full">
-                                    <i class="fas fa-sync-alt mr-2"></i>Generate Random Prefix
-                                </button>
-                                <div id="randomPrefixDisplay" class="mt-3 p-2 bg-[var(--accent-glass-bg)] border border-[var(--glass-border)] rounded text-center hidden">
-                                    <span class="text-[var(--accent)] font-bold" id="randomPrefixText"></span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -283,7 +291,7 @@ let generatedData = [];
 let currentSequentialPrefix = null; // keep one prefix per run for sequential mode
 
 document.addEventListener('DOMContentLoaded', () => {
-    const inputs = ['firstName', 'lastName', 'alphabetLength', 'usernamePrefix', 'domain', 'quantity', 'password'];
+    const inputs = ['firstName', 'lastName', 'alphabetLength', 'sequentialLength', 'usernameCount', 'domain', 'quantity', 'password'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -338,37 +346,6 @@ function switchUsernameTab(type) {
     validateForm();
 }
 
-function switchPrefixTab(type) {
-    const manualTab = document.getElementById('manual-prefix-tab');
-    const randomTab = document.getElementById('random-prefix-tab');
-    const manualButton = document.getElementById('tab-manual');
-    const randomButton = document.getElementById('tab-random');
-
-    // Hide all tabs
-    manualTab.classList.add('hidden');
-    randomTab.classList.add('hidden');
-    
-    // Remove active from all buttons
-    manualButton.classList.remove('active');
-    randomButton.classList.remove('active');
-
-    if (type === 'manual') {
-        manualTab.classList.remove('hidden');
-        manualButton.classList.add('active');
-        // switching to manual clears current random prefix state
-        currentSequentialPrefix = null;
-    } else if (type === 'random') {
-        randomTab.classList.remove('hidden');
-        randomButton.classList.add('active');
-        // ensure a random prefix exists and is reused
-        if (!currentSequentialPrefix) {
-            currentSequentialPrefix = generateRandomAlphabet(5);
-            document.getElementById('randomPrefixText').textContent = currentSequentialPrefix;
-            document.getElementById('randomPrefixDisplay').classList.remove('hidden');
-        }
-    }
-    validateForm();
-}
 
 function generateRandomAlphabet(length) {
     const chars = 'abcdefghijklmnopqrstuvwxyz';
@@ -379,32 +356,14 @@ function generateRandomAlphabet(length) {
     return result;
 }
 
-function generateRandomPrefix() {
-    const randomPrefix = generateRandomAlphabet(5);
-    currentSequentialPrefix = randomPrefix;
-    document.getElementById('randomPrefixText').textContent = randomPrefix;
-    document.getElementById('randomPrefixDisplay').classList.remove('hidden');
-    showToast('Random prefix berhasil dibuat!');
-}
 
 function generateUsername(index, usernameType, fixedPrefix) {
     if (usernameType === 'alphabet') {
         const length = parseInt(document.getElementById('alphabetLength').value) || 5;
         return generateRandomAlphabet(length);
     } else if (usernameType === 'sequential') {
-        // Use fixed prefix if provided (ensures same prefix for all indices in one run)
-        let prefix = fixedPrefix;
-        if (!prefix) {
-            prefix = 'user';
-            // Check if manual tab is active
-            if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
-                prefix = document.getElementById('usernamePrefix').value.trim() || 'user';
-            } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
-                const randomPrefixText = document.getElementById('randomPrefixText').textContent;
-                prefix = randomPrefixText || generateRandomAlphabet(5);
-            }
-        }
-        return `${prefix}${index}`;
+        // For sequential mode, always generate random prefix
+        return `${fixedPrefix}${index}`;
     }
 }
 
@@ -425,14 +384,9 @@ function validateForm() {
         const alphabetLength = parseInt(document.getElementById('alphabetLength').value);
         isValid = isValid && alphabetLength > 0 && alphabetLength <= 20;
     } else if (!sequentialTab.classList.contains('hidden')) {
-        // Check if manual tab is active
-        if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
-            const usernamePrefix = document.getElementById('usernamePrefix').value.trim();
-            isValid = isValid && usernamePrefix;
-        } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
-            // For random prefix, always valid since it will be generated
-            isValid = isValid && true;
-        }
+        const sequentialLength = parseInt(document.getElementById('sequentialLength').value);
+        const usernameCount = parseInt(document.getElementById('usernameCount').value);
+        isValid = isValid && sequentialLength > 0 && sequentialLength <= 20 && usernameCount > 0;
     }
 
     const generateButton = document.getElementById('generateButton');
@@ -455,42 +409,56 @@ function generateData() {
     
     generatedData = [];
 
-    // Compute a single prefix for sequential mode so all emails share the same base
-    let sequentialPrefix = null;
+    // For sequential mode, get the length for random prefix generation
+    let sequentialLength = 5; // default
     if (usernameType === 'sequential') {
-        if (!document.getElementById('manual-prefix-tab').classList.contains('hidden')) {
-            sequentialPrefix = document.getElementById('usernamePrefix').value.trim() || 'user';
-            currentSequentialPrefix = sequentialPrefix;
-        } else if (!document.getElementById('random-prefix-tab').classList.contains('hidden')) {
-            // prefer previously generated random prefix
-            sequentialPrefix = currentSequentialPrefix || document.getElementById('randomPrefixText').textContent || generateRandomAlphabet(5);
-            currentSequentialPrefix = sequentialPrefix;
-            // reflect in UI when auto-generated
-            if (!document.getElementById('randomPrefixText').textContent) {
-                document.getElementById('randomPrefixText').textContent = sequentialPrefix;
-                document.getElementById('randomPrefixDisplay').classList.remove('hidden');
-            }
-        } else {
-            sequentialPrefix = currentSequentialPrefix || 'user';
-            currentSequentialPrefix = sequentialPrefix;
-        }
+        sequentialLength = parseInt(document.getElementById('sequentialLength').value) || 5;
     }
 
-    for (let i = 1; i <= quantity; i++) {
-        const username = generateUsername(i, usernameType, sequentialPrefix);
-        const email = `${username}@${domain}`;
+    if (usernameType === 'sequential') {
+        const usernameCount = parseInt(document.getElementById('usernameCount').value) || 100;
+        const totalUsernames = Math.ceil(quantity / usernameCount);
         
-        generatedData.push({
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
-            password: password
-        });
+        for (let usernameIndex = 0; usernameIndex < totalUsernames; usernameIndex++) {
+            // Generate new random prefix for each username group
+            const currentPrefix = generateRandomAlphabet(sequentialLength);
+            
+            const remainingAccounts = quantity - generatedData.length;
+            const accountsForThisUsername = Math.min(usernameCount, remainingAccounts);
+            
+            for (let i = 1; i <= accountsForThisUsername; i++) {
+                const username = `${currentPrefix}${i}`;
+                const email = `${username}@${domain}`;
+                
+                generatedData.push({
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password
+                });
+            }
+        }
+    } else {
+        // Alphabet mode - generate random usernames
+        for (let i = 1; i <= quantity; i++) {
+            const username = generateUsername(i, usernameType, sequentialPrefix);
+            const email = `${username}@${domain}`;
+            
+            generatedData.push({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password
+            });
+        }
     }
 
     // Only reserve unique tokens in alphabet mode; keep prefix+number intact in sequential mode
     if (usernameType === 'alphabet') {
-        const payload = { items: generatedData.map(d => ({ username: d.email.split('@')[0] })) };
+        const payload = { 
+            domain: domain,
+            items: generatedData.map(d => ({ username: d.email.split('@')[0] })) 
+        };
         fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             .then(r => r.json())
             .then(res => {
@@ -647,14 +615,12 @@ function clearForm() {
     document.getElementById('firstName').value = '';
     document.getElementById('lastName').value = '';
     document.getElementById('alphabetLength').value = '';
-    document.getElementById('usernamePrefix').value = '';
+    document.getElementById('sequentialLength').value = '';
+    document.getElementById('usernameCount').value = '';
     document.getElementById('domain').value = '';
     document.getElementById('quantity').value = '';
     document.getElementById('password').value = '';
     
-    // Clear random prefix display
-    document.getElementById('randomPrefixDisplay').classList.add('hidden');
-    document.getElementById('randomPrefixText').textContent = '';
     currentSequentialPrefix = null;
     
     validateForm();

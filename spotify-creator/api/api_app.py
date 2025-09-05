@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import ipaddress
@@ -8,6 +10,38 @@ from main import Spotify, StudentVerifier
 
 load_dotenv()
 APP = Flask(__name__)
+
+USAGE_DIR = os.path.join(os.path.dirname(__file__), "logs")
+USAGE_FILE = os.path.join(USAGE_DIR, "usage.json")
+
+def _today_str() -> str:
+    return datetime.utcnow().strftime("%Y-%m-%d")
+
+def _load_usage():
+    try:
+        if not os.path.exists(USAGE_FILE):
+            return {"date": _today_str(), "global_count": 0, "per_ip": {}}
+        with open(USAGE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("date") != _today_str():
+            return {"date": _today_str(), "global_count": 0, "per_ip": {}}
+        if "per_ip" not in data:
+            data["per_ip"] = {}
+        if "global_count" not in data:
+            data["global_count"] = 0
+        return data
+    except Exception:
+        return {"date": _today_str(), "global_count": 0, "per_ip": {}}
+
+def _save_usage(data):
+    os.makedirs(USAGE_DIR, exist_ok=True)
+    tmp_file = USAGE_FILE + ".tmp"
+    with open(tmp_file, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(tmp_file, USAGE_FILE)
+
+MAX_PER_IP_PER_DAY = 10
+MAX_GLOBAL_PER_DAY = 150
 
 def get_client_ip():
     """Get client IP address from various headers"""
@@ -78,6 +112,27 @@ def before_request():
             "ip": client_ip
         }), 403
 
+    # Enforce daily rate limits only for account creation endpoint
+    if request.path == "/api/create" and request.method == "POST":
+        usage = _load_usage()
+        # Global cap
+        if usage.get("global_count", 0) >= MAX_GLOBAL_PER_DAY:
+            return jsonify({
+                "success": False,
+                "error": "Daily global limit reached",
+                "limit": MAX_GLOBAL_PER_DAY,
+                "ip": client_ip
+            }), 429
+        # Per-IP cap
+        ip_count = int(usage.get("per_ip", {}).get(client_ip, 0))
+        if ip_count >= MAX_PER_IP_PER_DAY:
+            return jsonify({
+                "success": False,
+                "error": "Daily per-user limit reached",
+                "limit": MAX_PER_IP_PER_DAY,
+                "ip": client_ip
+            }), 429
+
 @APP.route("/", methods=["GET"])
 def health_check():
     """Health check endpoint"""
@@ -111,7 +166,7 @@ def api_create():
 
         # Create Spotify account
         spotify = Spotify(process_id=0, use_proxy=(os.getenv("USE_PROXY", "False").lower() == "true"))
-        account = spotify.create(persist_files=False)
+        account = spotify.create(persist_files=True)
 
         if not account:
             return jsonify({
@@ -136,6 +191,13 @@ def api_create():
             except Exception as e:
                 is_student = False
 
+        # Increment usage counters after successful creation
+        usage = _load_usage()
+        usage["global_count"] = int(usage.get("global_count", 0)) + 1
+        usage.setdefault("per_ip", {})
+        usage["per_ip"][client_ip] = int(usage["per_ip"].get(client_ip, 0)) + 1
+        _save_usage(usage)
+
         return jsonify({
             "success": True,
             "email": email,
@@ -152,11 +214,15 @@ def api_create():
 @APP.route("/api/status", methods=["GET"])
 def api_status():
     """Get service status"""
+    usage = _load_usage()
     return jsonify({
         "success": True,
         "service": "SPO Creator API",
         "version": "1.0.0",
-        "status": "No database tracking enabled"
+        "date": usage.get("date"),
+        "global_count": usage.get("global_count", 0),
+        "per_ip": usage.get("per_ip", {}),
+        "limits": {"per_ip_per_day": MAX_PER_IP_PER_DAY, "global_per_day": MAX_GLOBAL_PER_DAY}
     }), 200
 
 @APP.errorhandler(404)
