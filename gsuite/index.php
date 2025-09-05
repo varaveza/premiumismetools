@@ -50,39 +50,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
 
             $len = max(1, strlen($letters));
 
-            // If username contains trailing digits (sequential mode), check if prefix is unique
+            // If username contains trailing digits (sequential mode), just reserve the prefix
             if ($digits !== '') {
                 $prefix = $letters;
                 $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token, domain) VALUES (?, ?)');
                 $stmt->execute([$prefix, $domain]);
                 
-                // If prefix was successfully reserved, use it; otherwise generate new unique prefix
-                if ($stmt->rowCount() === 1) {
-                    $resultUsernames[] = $prefix . $digits;
-                } else {
-                    // Generate new unique prefix for sequential mode
-                    $newPrefix = '';
-                    $len = max(1, strlen($prefix));
-                    $attempts = 0;
-                    while (true) {
-                        $attempts++;
-                        $newPrefix = '';
-                        for ($i = 0; $i < $len; $i++) {
-                            $newPrefix .= chr(ord('a') + random_int(0, 25));
-                        }
-                        $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token, domain) VALUES (?, ?)');
-                        $stmt->execute([$newPrefix, $domain]);
-                        if ($stmt->rowCount() === 1) {
-                            break;
-                        }
-                        if ($attempts > 1000) {
-                            http_response_code(500);
-                            echo json_encode(['success' => false, 'error' => 'Too many collisions for sequential prefix']);
-                            exit;
-                        }
-                    }
-                    $resultUsernames[] = $newPrefix . $digits;
-                }
+                // For sequential mode, always use the original prefix from frontend
+                // Frontend already generates unique prefixes, so we just reserve them
+                $resultUsernames[] = $prefix . $digits;
                 continue;
             }
 
@@ -442,10 +418,10 @@ function generateData() {
 
     if (usernameType === 'sequential') {
         const usernameCount = parseInt(document.getElementById('usernameCount').value) || 100;
-        const totalUsernames = Math.ceil(quantity / usernameCount);
+        const totalUniqueUsernames = Math.ceil(quantity / usernameCount);
         
-        for (let usernameIndex = 0; usernameIndex < totalUsernames; usernameIndex++) {
-            // Generate new random prefix for each username group
+        for (let usernameIndex = 0; usernameIndex < totalUniqueUsernames; usernameIndex++) {
+            // Generate unique prefix for each username group
             const currentPrefix = generateRandomAlphabet(sequentialLength);
             
             const remainingAccounts = quantity - generatedData.length;
