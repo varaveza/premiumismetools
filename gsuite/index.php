@@ -18,9 +18,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
         $pdo = new PDO('sqlite:' . $dbPath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
-        // Drop old table if exists and create new one with domain support
-        $pdo->exec("DROP TABLE IF EXISTS used_letter_tokens");
-        $pdo->exec("CREATE TABLE used_letter_tokens (token TEXT, domain TEXT, PRIMARY KEY (token, domain))");
+        // Create table if not exists with domain support
+        $pdo->exec("CREATE TABLE IF NOT EXISTS used_letter_tokens (token TEXT, domain TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (token, domain))");
 
         $domain = $data['domain'] ?? '';
         if ($domain === '') {
@@ -51,10 +50,39 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
 
             $len = max(1, strlen($letters));
 
-            // If username contains trailing digits (sequential mode), do NOT alter the prefix on the server.
-            // This preserves input like "tes1" -> "tes1" even if "tes" was used before.
+            // If username contains trailing digits (sequential mode), check if prefix is unique
             if ($digits !== '') {
-                $resultUsernames[] = $letters . $digits;
+                $prefix = $letters;
+                $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token, domain) VALUES (?, ?)');
+                $stmt->execute([$prefix, $domain]);
+                
+                // If prefix was successfully reserved, use it; otherwise generate new unique prefix
+                if ($stmt->rowCount() === 1) {
+                    $resultUsernames[] = $prefix . $digits;
+                } else {
+                    // Generate new unique prefix for sequential mode
+                    $newPrefix = '';
+                    $len = max(1, strlen($prefix));
+                    $attempts = 0;
+                    while (true) {
+                        $attempts++;
+                        $newPrefix = '';
+                        for ($i = 0; $i < $len; $i++) {
+                            $newPrefix .= chr(ord('a') + random_int(0, 25));
+                        }
+                        $stmt = $pdo->prepare('INSERT OR IGNORE INTO used_letter_tokens(token, domain) VALUES (?, ?)');
+                        $stmt->execute([$newPrefix, $domain]);
+                        if ($stmt->rowCount() === 1) {
+                            break;
+                        }
+                        if ($attempts > 1000) {
+                            http_response_code(500);
+                            echo json_encode(['success' => false, 'error' => 'Too many collisions for sequential prefix']);
+                            exit;
+                        }
+                    }
+                    $resultUsernames[] = $newPrefix . $digits;
+                }
                 continue;
             }
 
@@ -81,11 +109,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
                 }
             }
             
-            // Don't store random prefixes in database to avoid conflicts
-            if (strlen($token) <= 5) {
-                $stmt = $pdo->prepare('DELETE FROM used_letter_tokens WHERE token = ? AND domain = ?');
-                $stmt->execute([$token, $domain]);
-            }
+            // Keep all tokens in database to prevent duplicates
+            // No deletion needed - all tokens should be preserved
 
             $resultUsernames[] = $token . $digits;
         }
@@ -453,37 +478,29 @@ function generateData() {
         }
     }
 
-    // Only reserve unique tokens in alphabet mode; keep prefix+number intact in sequential mode
-    if (usernameType === 'alphabet') {
-        const payload = { 
-            domain: domain,
-            items: generatedData.map(d => ({ username: d.email.split('@')[0] })) 
-        };
-        fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(r => r.json())
-            .then(res => {
-                if (res && res.success && Array.isArray(res.usernames)) {
-                    const domainFinal = document.getElementById('domain').value.trim();
-                    generatedData = generatedData.map((d, idx) => ({ ...d, email: `${res.usernames[idx]}@${domainFinal}` }));
-                }
-                displayResults();
-                document.getElementById('main-section').classList.add('hidden');
-                document.getElementById('result-section').classList.remove('hidden');
-                showToast(`${generatedData.length} data berhasil dibuat!`);
-            })
-            .catch(() => {
-                displayResults();
-                document.getElementById('main-section').classList.add('hidden');
-                document.getElementById('result-section').classList.remove('hidden');
-                showToast(`${generatedData.length} data berhasil dibuat!`);
-            });
-    } else {
-        // Sequential: no server mutation; show results directly
-        displayResults();
-        document.getElementById('main-section').classList.add('hidden');
-        document.getElementById('result-section').classList.remove('hidden');
-        showToast(`${generatedData.length} data berhasil dibuat!`);
-    }
+    // Reserve unique tokens for both alphabet and sequential modes to prevent duplicates
+    const payload = { 
+        domain: domain,
+        items: generatedData.map(d => ({ username: d.email.split('@')[0] })) 
+    };
+    fetch('?action=reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(r => r.json())
+        .then(res => {
+            if (res && res.success && Array.isArray(res.usernames)) {
+                const domainFinal = document.getElementById('domain').value.trim();
+                generatedData = generatedData.map((d, idx) => ({ ...d, email: `${res.usernames[idx]}@${domainFinal}` }));
+            }
+            displayResults();
+            document.getElementById('main-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            showToast(`${generatedData.length} data berhasil dibuat!`);
+        })
+        .catch(() => {
+            displayResults();
+            document.getElementById('main-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            showToast(`${generatedData.length} data berhasil dibuat!`);
+        });
 }
 
 function displayResults() {
