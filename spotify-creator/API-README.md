@@ -88,14 +88,14 @@ http://your-domain/spotify-creator/api-index.php
 ## Rate Limiting
 
 File `api-index.php` memiliki rate limiting yang membatasi:
-- **1 user per hari** berdasarkan kombinasi IP + User Agent
+- **10 users per hari** berdasarkan IP address
 - Rate limiting aktif secara default (`DISABLE_RATE_LIMIT = false`)
 - Data tersimpan di SQLite database (`spo_creator.db`)
 
 ### Cara Kerja Rate Limiting:
-1. Setiap request dicek kombinasi IP + User Agent hash
-2. Jika sudah pernah submit hari ini, akan ditolak
-3. Pesan error: "Anda sudah membuat akun hari ini. Coba lagi besok."
+1. Setiap request dicek jumlah submission per IP address
+2. Jika sudah submit 10 kali hari ini, akan ditolak
+3. Pesan error: "Anda sudah membuat 10 akun hari ini. Coba lagi besok."
 4. Reset otomatis setiap hari (00:00)
 
 ### Disable Rate Limiting (untuk testing):

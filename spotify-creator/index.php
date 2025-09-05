@@ -39,13 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $uaHash = hash('sha256', $ua);
     $today = date('Y-m-d');
     
-    // Check rate limiting - 1 user (IP + UA) per day
+    // Check rate limiting - 10 users per IP per day
     if (!$cfg['DISABLE_RATE_LIMIT']) {
-        // Check if this IP + UA combination already submitted today
-        $stmt = $pdo->prepare("SELECT 1 FROM ip_submissions WHERE ip = ? AND ua_hash = ? AND date(submitted_at) = ?");
-        $stmt->execute([$ip, $uaHash, $today]);
-        if ($stmt->fetchColumn()) {
-            $result = ['success' => false, 'error' => 'Anda sudah membuat akun hari ini. Coba lagi besok.'];
+        // Check if this IP has already submitted 10 times today
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ip_submissions WHERE ip = ? AND date(submitted_at) = ?");
+        $stmt->execute([$ip, $today]);
+        $ip_count = $stmt->fetchColumn() ?: 0;
+        
+        if ($ip_count >= 10) {
+            $result = ['success' => false, 'error' => 'Anda sudah membuat 10 akun hari ini. Coba lagi besok.'];
         }
     }
     
