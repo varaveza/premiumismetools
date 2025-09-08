@@ -15,10 +15,24 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
         }
 
         $dbPath = __DIR__ . '/gsuite_unique.db';
-        $pdo = new PDO('sqlite:' . $dbPath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
-        // Create table if not exists with domain support
+        // Ensure database file exists
+        if (!file_exists($dbPath)) {
+            // Create empty database file if it doesn't exist
+            touch($dbPath);
+        }
+        
+        $pdo = new PDO('sqlite:' . $dbPath, null, null, [
+            PDO::ATTR_TIMEOUT => 30,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+        
+        // Enable WAL mode for better concurrency
+        $pdo->exec("PRAGMA journal_mode=WAL");
+        $pdo->exec("PRAGMA synchronous=NORMAL");
+        
+        // Create table if not exists with domain support (preserves existing data)
         $pdo->exec("CREATE TABLE IF NOT EXISTS used_letter_tokens (token TEXT, domain TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (token, domain))");
 
         $domain = $data['domain'] ?? '';
@@ -46,6 +60,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'reserve' && $_SERVER['REQUEST
                 $digitsMatch = [];
                 preg_match('/(\d+)$/', $original, $digitsMatch);
                 $digits = $digitsMatch[1] ?? '';
+            }
+            
+            // If no letters found, skip this item
+            if (empty($letters)) {
+                $resultUsernames[] = '';
+                continue;
             }
 
             $len = max(1, strlen($letters));
@@ -366,6 +386,7 @@ function generateUsername(index, usernameType, fixedPrefix) {
         // For sequential mode, always generate random prefix
         return `${fixedPrefix}${index}`;
     }
+    return '';
 }
 
 function validateForm() {
@@ -383,11 +404,11 @@ function validateForm() {
     
     if (!alphabetTab.classList.contains('hidden')) {
         const alphabetLength = parseInt(document.getElementById('alphabetLength').value);
-        isValid = isValid && alphabetLength > 0 && alphabetLength <= 20;
+        isValid = isValid && alphabetLength >= 5 && alphabetLength <= 20;
     } else if (!sequentialTab.classList.contains('hidden')) {
         const sequentialLength = parseInt(document.getElementById('sequentialLength').value);
         const usernameCount = parseInt(document.getElementById('usernameCount').value);
-        isValid = isValid && sequentialLength > 0 && sequentialLength <= 20 && usernameCount > 0;
+        isValid = isValid && sequentialLength >= 5 && sequentialLength <= 20 && usernameCount > 0;
     }
 
     const generateButton = document.getElementById('generateButton');
@@ -442,7 +463,7 @@ function generateData() {
     } else {
         // Alphabet mode - generate random usernames
         for (let i = 1; i <= quantity; i++) {
-            const username = generateUsername(i, usernameType, sequentialPrefix);
+            const username = generateUsername(i, usernameType, null);
             const email = `${username}@${domain}`;
             
             generatedData.push({
