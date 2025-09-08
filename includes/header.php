@@ -85,7 +85,7 @@
                         <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                         <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
                         <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                        <a href="<?php echo $base_prefix; ?>gemini-creator/" class="nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Creator</a>
+                        <a href="<?php echo $base_prefix; ?>gemini-verify/" class="nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
                     </nav>
                 </div>
                 <button class="nav-arrow right" id="navNext" aria-label="Next">
@@ -104,7 +104,7 @@
                     <a href="<?php echo $base_prefix; ?>shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                     <a href="<?php echo $base_prefix; ?>spotify-creator/" class="mobile-nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
                     <a href="<?php echo $base_prefix; ?>capcut-creator/" class="mobile-nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                    <a href="<?php echo $base_prefix; ?>gemini-creator/" class="mobile-nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Creator</a>
+                    <a href="<?php echo $base_prefix; ?>gemini-creator/" class="mobile-nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
                 </div>
             </div>
         </header>
