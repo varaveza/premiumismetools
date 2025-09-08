@@ -17,7 +17,7 @@ fake = Faker('en_IN')  # Gunakan lokal India
 # Posisi teks sesuai koordinat yang diberikan, dikurangi 15 pixel agar naik ke atas
 POS = {
     'name': (271, 309 - 15),
-    'id': (271, 346 - 15),
+    'id': (271, 346 - 11),
     'dob': (271, 392 - 15),
     'address1': (271, 440 - 15),
     'address2': (271, 470 - 15),  # Baris kedua address
