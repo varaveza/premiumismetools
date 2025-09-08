@@ -84,6 +84,7 @@
                         <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
                         <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                         <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
+                        <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
                     </nav>
                 </div>
                 <button class="nav-arrow right" id="navNext" aria-label="Next">
@@ -101,6 +102,7 @@
                     <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
                     <a href="<?php echo $base_prefix; ?>shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                     <a href="<?php echo $base_prefix; ?>spotify-creator/" class="mobile-nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
+                    <a href="<?php echo $base_prefix; ?>capcut-creator/" class="mobile-nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
                 </div>
             </div>
         </header>
