@@ -56,14 +56,7 @@
     <main class="container-main">
         <!-- Header -->
         <header class="header-section">
-            <!-- Mobile Hamburger Menu -->
-            <div class="mobile-nav-toggle">
-                <button id="hamburger-btn" class="hamburger-btn">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
+            
 
             <!-- Logo Section -->
             <div class="logo-section">
@@ -77,15 +70,15 @@
                 </button>
                 <div class="nav-viewport" id="navViewport">
                     <nav class="desktop-nav nav-track" id="navTrack">
+                        <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
+                        <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                         <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
+                        <a href="<?php echo $base_prefix; ?>gemini-verify/" class="nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
                         <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
                         <a href="<?php echo $base_prefix; ?>refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                        <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                         <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
                         <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                         <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
-                        <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                        <a href="<?php echo $base_prefix; ?>gemini-verify/" class="nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
                     </nav>
                 </div>
                 <button class="nav-arrow right" id="navNext" aria-label="Next">
@@ -93,18 +86,5 @@
                 </button>
             </div>
 
-            <!-- Mobile Navigation Overlay -->
-            <div id="mobile-nav" class="mobile-nav">
-                <div class="mobile-nav-content">
-                    <a href="<?php echo $base_prefix; ?>generator-email/" class="mobile-nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
-                    <a href="<?php echo $base_prefix; ?>gsuite/" class="mobile-nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
-                    <a href="<?php echo $base_prefix; ?>refund-calculator/" class="mobile-nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
-                    <a href="<?php echo $base_prefix; ?>split-mail/" class="mobile-nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
-                    <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="mobile-nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
-                    <a href="<?php echo $base_prefix; ?>shortlink/" class="mobile-nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
-                    <a href="<?php echo $base_prefix; ?>spotify-creator/" class="mobile-nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
-                    <a href="<?php echo $base_prefix; ?>capcut-creator/" class="mobile-nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                    <a href="<?php echo $base_prefix; ?>gemini-verify/" class="mobile-nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
-                </div>
-            </div>
+            
         </header>
