@@ -8,14 +8,14 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 8080,
+      PORT: 7070,
       MAX_GLOBAL_PER_DAY: 300,
       MAX_PER_IP_PER_DAY: 25,
       LOCAL_ONLY: 'true'
     },
     env_development: {
       NODE_ENV: 'development',
-      PORT: 8080,
+      PORT: 7070,
       MAX_GLOBAL_PER_DAY: 1000,
       MAX_PER_IP_PER_DAY: 100,
       LOCAL_ONLY: 'false'
