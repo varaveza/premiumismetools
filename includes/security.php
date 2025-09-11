@@ -165,6 +165,17 @@ function set_security_headers() {
     header('X-Frame-Options: DENY');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://cdnjs.cloudflare.com; style-src \'self\' \'unsafe-inline\' https://cdnjs.cloudflare.com; img-src \'self\' data: https:;');
+    header("Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; "
+        . "script-src-elem 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; "
+        . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        . "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        . "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        . "img-src 'self' data: https:; "
+        . "connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; "
+        . "worker-src 'self' blob:; "
+        . "frame-ancestors 'none'; "
+        . "base-uri 'self';");
 }
 ?>

@@ -50,7 +50,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             const hamburgerBtn = document.getElementById('hamburger-btn');
             const mobileNav = document.getElementById('mobile-nav');
-            
+
+            if (!hamburgerBtn || !mobileNav) {
+                return;
+            }
+
             hamburgerBtn.addEventListener('click', function() {
                 hamburgerBtn.classList.toggle('active');
                 mobileNav.classList.toggle('active');
