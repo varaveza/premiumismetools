@@ -1,0 +1,8 @@
+{
+  "password": "masuk@B1",
+  "domain": "@yotomail.com",
+  "proxies": {
+    "SG": "username__cr.sg:password@gw.dataimpulse.com:823"
+  },
+  "default_country": "SG"
+}

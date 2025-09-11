@@ -1,4 +1,10 @@
-<?php $base_prefix = isset($base_prefix) ? $base_prefix : '../'; ?>
+<?php 
+$base_prefix = isset($base_prefix) ? $base_prefix : '../'; 
+// Include security helper
+require_once __DIR__ . '/security.php';
+// Set security headers
+set_security_headers();
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>

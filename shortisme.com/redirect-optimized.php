@@ -55,7 +55,7 @@ try {
         exit;
     } else {
         header("HTTP/1.0 404 Not Found");
-        echo "<!DOCTYPE html><html><head><title>404 - Shortlink Not Found</title></head><body><h1>Shortlink tidak ditemukan</h1><p>Link dengan slug '{$slug}' tidak ditemukan.</p></body></html>";
+        echo "<!DOCTYPE html><html><head><title>404 - Shortlink Not Found</title></head><body><h1>Shortlink tidak ditemukan</h1><p>Link dengan slug '" . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . "' tidak ditemukan.</p></body></html>";
         exit;
     }
     
