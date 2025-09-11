@@ -1,8 +1,8 @@
 {
-  "password": "masuk123",
-  "domain": "@motionisme.com",
-  "proxies": {
-    "SG": "username__cr.sg:password@gw.dataimpulse.com:823"
-  },
-  "default_country": "SG"
-}
+    "password": "Premium@123",
+    "domain": "@motionisme.com",
+    "proxies": {
+      "SG": ""
+    },
+    "default_country": "SG"
+  }

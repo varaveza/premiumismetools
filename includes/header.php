@@ -77,7 +77,6 @@ set_security_headers();
                 <div class="nav-viewport" id="navViewport">
                     <nav class="desktop-nav nav-track" id="navTrack">
                         <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                        <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                         <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
                         <a href="<?php echo $base_prefix; ?>gemini-verify/" class="nav-link <?php echo $current_page === 'gemini' ? 'active' : ''; ?>">Gemini Verify</a>
                         <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
@@ -85,6 +84,8 @@ set_security_headers();
                         <a href="<?php echo $base_prefix; ?>remove-duplicate/" class="nav-link <?php echo $current_page === 'duplicate' ? 'active' : ''; ?>">Remove Duplicate</a>
                         <a href="<?php echo $base_prefix; ?>shortlink/" class="nav-link <?php echo $current_page === 'shortlink' ? 'active' : ''; ?>">Shortlink</a>
                         <a href="<?php echo $base_prefix; ?>spotify-creator/" class="nav-link <?php echo $current_page === 'spo' ? 'active' : ''; ?>">Spotify Creator</a>
+                        <a href="<?php echo $base_prefix; ?>surfshark-creator/" class="nav-link <?php echo $current_page === 'surfshark' ? 'active' : ''; ?>">Surfshark-creator</a>
+                        <a href="<?php echo $base_prefix; ?>split-mail/" class="nav-link <?php echo $current_page === 'splitter' ? 'active' : ''; ?>">Email Splitter</a>
                     </nav>
                 </div>
                 <button class="nav-arrow right" id="navNext" aria-label="Next">

@@ -1,63 +1,13 @@
 <?php
-// Simple PHP frontend to call Node backend (Surfshark Creator)
+// Surfshark Creator (webbase, on-demand). Desain dan CSS mengikuti layout global (header/footer)
 
-// Start session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Configure backend base URL
-$BACKEND_BASE = getenv('BACKEND_BASE') ?: 'http://127.0.0.1:7070';
-
-function http_get_json($url) {
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 15,
-    ]);
-    $resp = curl_exec($ch);
-    $err = curl_error($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($resp === false) {
-        return [null, $err ?: 'GET request failed'];
-    }
-    $data = json_decode($resp, true);
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        return [null, 'Invalid JSON from backend (GET). HTTP '.$code];
-    }
-    return [$data, null];
-}
-
-function http_post_json($url, $payload) {
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 120,
-    ]);
-    $resp = curl_exec($ch);
-    $err = curl_error($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($resp === false) {
-        return [null, $err ?: 'POST request failed'];
-    }
-    $data = json_decode($resp, true);
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        return [null, 'Invalid JSON from backend (POST). HTTP '.$code];
-    }
-    return [$data, null];
-}
-
-// SQLite rate limit (same pattern as capcut-creator)
+// SQLite rate limit: per IP+UA 10/hari, global 250/hari
 $DB_PATH = __DIR__ . '/surfshark_creator.db';
+$pdo = null;
 try {
     $pdo = new PDO('sqlite:' . $DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -76,107 +26,150 @@ try {
     error_log('Surfshark DB error: ' . $e->getMessage());
 }
 
-// Limits
-$MAX_PER_IP_BROWSER = 25; // 1 IP 1 browser hanya bisa 25
-$MAX_GLOBAL_DAILY = 300;  // sehari max 300
+$MAX_PER_IP_BROWSER = 10;
+$MAX_GLOBAL_DAILY   = 250;
 
-// Handle form submit with rate limiting
-$result = null;
-$error = null;
+function call_register_api($email, $password, $domain) {
+    $url = 'http://127.0.0.1:7070/register';
+    $payload = array();
+    if (!empty($email)) { $payload['email'] = $email; }
+    if (!empty($password)) { $payload['password'] = $password; }
+    if (!empty($domain)) { $payload['domain'] = $domain; }
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+
+    $response = curl_exec($ch);
+    $errno = curl_errno($ch);
+    $error = curl_error($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($errno) {
+        return array('success' => false, 'error' => 'cURL error: ' . $error, 'http' => $status);
+    }
+
+    $data = json_decode($response, true);
+    if ($data === null) {
+        return array('success' => false, 'error' => 'Invalid JSON response (HTTP ' . $status . ')', 'http' => $status);
+    }
+    // Tambahkan kode HTTP agar caller bisa bedakan limit/invalid
+    if (is_array($data) && !isset($data['http'])) {
+        $data['http'] = $status;
+    }
+    return $data;
+}
+
+$resultMessage = '';
+$resultsBatch = array();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $country = isset($_POST['country']) ? trim($_POST['country']) : '';
-    $countryManual = isset($_POST['country_manual']) ? strtoupper(trim($_POST['country_manual'])) : '';
-    $total = isset($_POST['total']) ? intval($_POST['total']) : 1;
-    $threads = 1;
-    $password = isset($_POST['password']) ? (string)$_POST['password'] : '';
+    $identifier = isset($_POST['identifier']) ? trim($_POST['identifier']) : '';
+    $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+    $jumlah = isset($_POST['jumlah']) ? (int)$_POST['jumlah'] : 1;
+    if ($jumlah < 1) { $jumlah = 1; }
+    if ($jumlah > 10) { $jumlah = 10; }
+
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $uaHash = hash('sha256', $ua);
     $today = date('Y-m-d');
+    $error = null;
 
-    // Basic validation
-    if ($total < 1) $total = 1;
-    if ($total > 1) {
-        $threads = 2;
-    } else {
-        $threads = 1;
-    }
-    if ($countryManual !== '') $country = $countryManual;
-
-    // Rate limit checks (PHP-side)
-    try {
-        // Per IP+Browser limit (25 per hari)
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ip_submissions WHERE ip = ? AND ua_hash = ? AND date(submitted_at) = ?");
-        $stmt->execute([$ip, $uaHash, $today]);
-        $ipUaCount = (int)($stmt->fetchColumn() ?: 0);
-        if ($ipUaCount >= $MAX_PER_IP_BROWSER) {
-            $error = 'Anda sudah mencapai batas 25 pembuatan untuk IP/Browser ini hari ini. Coba lagi besok.';
-        }
-
-        // Global daily limit (300 per hari)
-        if (!$error) {
-            $stmt = $pdo->prepare("SELECT count FROM daily_submissions WHERE date = ?");
-            $stmt->execute([$today]);
-            $dailyCount = (int)($stmt->fetchColumn() ?: 0);
-            if ($dailyCount >= $MAX_GLOBAL_DAILY) {
-                $error = 'Kuota harian sudah habis (300 akun/hari). Coba lagi besok.';
+    // Rate limit checks
+    if ($pdo instanceof PDO) {
+        try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM ip_submissions WHERE ip = ? AND ua_hash = ? AND date(submitted_at) = ?");
+            $stmt->execute([$ip, $uaHash, $today]);
+            $ipUaCount = (int)($stmt->fetchColumn() ?: 0);
+            if ($ipUaCount >= $MAX_PER_IP_BROWSER) {
+                $error = 'Anda sudah mencapai batas 10 pembuatan untuk IP/Browser ini hari ini. Coba lagi besok.';
             }
+            if (!$error) {
+                $stmt = $pdo->prepare("SELECT count FROM daily_submissions WHERE date = ?");
+                $stmt->execute([$today]);
+                $dailyCount = (int)($stmt->fetchColumn() ?: 0);
+                if ($dailyCount >= $MAX_GLOBAL_DAILY) {
+                    $error = 'Kuota harian sudah habis (250 akun/hari). Coba lagi besok.';
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Surfshark rate-limit check error: ' . $e->getMessage());
         }
-    } catch (Exception $e) {
-        // If DB fails, continue without rate limit but log
-        error_log('Surfshark rate-limit check error: ' . $e->getMessage());
     }
 
     if (!$error) {
-        [$resp, $err] = http_post_json($BACKEND_BASE.'/create', [
-            'country' => $country,
-            'total' => $total,
-            'threads' => $threads,
-            'password' => $password,
-        ]);
-        if ($err) {
-            $error = $err;
-        } else {
-            $result = $resp;
-            // Catat berdasarkan jumlah akun sukses (successCount)
-            $successCount = (int)($result['successCount'] ?? 0);
-            if ($successCount > 0) {
-                try {
-                    // Tambahkan entry ip_submissions sebanyak jumlah sukses
-                    $pdo->beginTransaction();
-                    $stmtIns = $pdo->prepare("INSERT INTO ip_submissions (ip, ua_hash, submitted_at) VALUES (?, ?, datetime('now'))");
-                    for ($i = 0; $i < $successCount; $i++) {
-                        $stmtIns->execute([$ip, $uaHash]);
-                    }
-                    // Tambahkan ke daily_submissions sesuai jumlah sukses
-                    $pdo->prepare("INSERT INTO daily_submissions (date, count) VALUES (?, ?) 
-                                    ON CONFLICT(date) DO UPDATE SET count = count + ?")
-                        ->execute([$today, $successCount, $successCount]);
-                    $pdo->commit();
-                } catch (Exception $e) {
-                    if ($pdo->inTransaction()) { $pdo->rollBack(); }
-                    error_log('Surfshark rate-limit write error: ' . $e->getMessage());
+        for ($i = 0; $i < $jumlah; $i++) {
+            $email = '';
+            $domain = '';
+            if ($identifier !== '') {
+                if (strpos($identifier, '@') !== false && preg_match('/^[^@]+@[^@]+\.[^@]+$/', $identifier)) {
+                    $email = $identifier;
+                } else {
+                    $domain = ($identifier[0] === '@') ? $identifier : ('@' . $identifier);
                 }
             }
+
+            $apiResult = call_register_api($email, $password, $domain);
+            if (isset($apiResult['success']) && $apiResult['success'] === true) {
+                $resultsBatch[] = array('ok' => true, 'email' => $apiResult['email'], 'password' => $apiResult['password']);
+                if ($pdo instanceof PDO) {
+                    try {
+                        $pdo->beginTransaction();
+                        $pdo->prepare("INSERT INTO ip_submissions (ip, ua_hash, submitted_at) VALUES (?, ?, datetime('now'))")
+                            ->execute([$ip, $uaHash]);
+                        $pdo->prepare("INSERT INTO daily_submissions (date, count) VALUES (?, ?) 
+                                       ON CONFLICT(date) DO UPDATE SET count = count + ?")
+                            ->execute([$today, 1, 1]);
+                        $pdo->commit();
+                    } catch (Exception $e) {
+                        if ($pdo->inTransaction()) { $pdo->rollBack(); }
+                        error_log('Surfshark rate-limit write error: ' . $e->getMessage());
+                    }
+                }
+            } else {
+                $err = isset($apiResult['error']) ? $apiResult['error'] : 'Unknown error';
+                $httpCode = isset($apiResult['http']) ? intval($apiResult['http']) : 0;
+                // Deteksi limit dari backend (400/429) dan hentikan iterasi berikutnya
+                if ($httpCode === 429 || stripos($err, 'limit') !== false) {
+                    $resultsBatch[] = array('ok' => false, 'error' => 'Limit harian tercapai. Coba lagi besok.');
+                    break;
+                } elseif ($httpCode === 400 && stripos($err, 'required') === false) {
+                    // Banyak API mengembalikan 400 saat limit/validation
+                    $resultsBatch[] = array('ok' => false, 'error' => $err);
+                    break;
+                } else {
+                    $resultsBatch[] = array('ok' => false, 'error' => $err);
+                }
+            }
+            if ($email !== '') { break; }
         }
+        $okCount = 0; $failCount = 0;
+        foreach ($resultsBatch as $r) { $r['ok'] ? $okCount++ : $failCount++; }
+        $resultMessage = 'Selesai: ' . $okCount . ' sukses, ' . $failCount . ' gagal';
+    } else {
+        $resultMessage = 'Failed: ' . $error;
     }
 
-    // Prevent duplicate submission on refresh: PRG pattern
-    $_SESSION['surfshark_result'] = $result;
-    $_SESSION['surfshark_error'] = $error;
+    // PRG pattern: simpan hasil ke session lalu redirect 303 agar refresh tidak mengulang submit
+    $_SESSION['surf_result_message'] = $resultMessage;
+    $_SESSION['surf_result_batch'] = $resultsBatch;
     header('Location: ' . basename(__FILE__), true, 303);
     exit;
 }
 
-// Load result from session (GET after redirect)
-if (isset($_SESSION['surfshark_result']) || isset($_SESSION['surfshark_error'])) {
-    $result = $_SESSION['surfshark_result'] ?? null;
-    $error = $_SESSION['surfshark_error'] ?? null;
-    unset($_SESSION['surfshark_result'], $_SESSION['surfshark_error']);
+// Removed saved results display; only show current session results
+// Load result from session (GET setelah redirect)
+if (isset($_SESSION['surf_result_message']) || isset($_SESSION['surf_result_batch'])) {
+    $resultMessage = $_SESSION['surf_result_message'] ?? '';
+    $resultsBatch = $_SESSION['surf_result_batch'] ?? array();
+    unset($_SESSION['surf_result_message'], $_SESSION['surf_result_batch']);
 }
 ?>
 <?php
-// Include shared header/footer for consistent styling
 $page_title = 'Premiumisme Tools';
 $current_page = 'surfshark';
 $base_prefix = '../';
@@ -186,74 +179,40 @@ include '../includes/header.php';
 <div class="content-wrapper">
     <div class="content-section">
         <h2>Surfshark Creator</h2>
-
         <form method="post" class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="mb-2 text-sm opacity-80">Password Akun</label>
-                <input class="form-input" type="password" id="password" name="password" placeholder="Contoh : masuk@B1">
+            <div class="row">
+                <label for="identifier">Domain</label>
+                <input class="form-input" type="text" id="identifier" name="identifier" placeholder="motionisme.com" />
             </div>
-            <div>
-                <label class="mb-2 text-sm opacity-80">Kode Negara Proxy</label>
-                <input class="form-input" type="text" id="country_manual" name="country_manual" placeholder="Contoh: sg" value="<?php echo isset($_POST['country_manual']) ? htmlspecialchars($_POST['country_manual']) : ''; ?>">
-                <div class="text-xs opacity-70 mt-1">Gunakan kode negara ISO-3166 dua huruf. Referensi: <a href="https://www.ssl.com/id/kode-negara-a/" target="_blank" rel="noopener" class="text-blue-400 hover:underline">Daftar Kode Negara</a></div>
+            <div class="row">
+                <label for="password">Password</label>
+                <input class="form-input" type="password" id="password" name="password" placeholder="Premium@123" />
             </div>
-            <div class="grid grid-cols-1 gap-4">
-                <div>
-                    <label class="mb-2 text-sm opacity-80">Total Akun</label>
-                    <input class="form-input" type="number" id="total" name="total" min="1" value="<?php echo isset($_POST['total']) ? intval($_POST['total']) : 1; ?>">
-                </div>
+            <div class="row">
+                <label for="jumlah">Jumlah</label>
+                <input class="form-input" type="number" id="jumlah" name="jumlah" min="1" max="10" value="1" />
             </div>
-            <button type="submit" class="btn btn-primary w-full mt-2">Buat Akun</button>
+            <button type="submit" class="btn btn-primary w-full mt-2">Register</button>
         </form>
-
-        <!-- Processing Modal -->
-        <div id="processingModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
-            <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; padding: 24px; max-width: 440px; width: calc(100% - 40px); text-align: center;">
-                <div class="flex items-center justify-center gap-4 mb-4">
-                    <div class="w-10 h-10" style="border: 4px solid var(--accent); border-top-color: transparent; border-radius: 9999px; animation: spin 1s linear infinite;"></div>
-                    <div class="text-left">
-                        <div class="font-bold">Memproses pembuatan akun</div>
-                    </div>
-                </div>
-                <div class="text-xs opacity-70">Jangan tutup halaman ini. Proses bisa memakan waktu beberapa menit.</div>
-            </div>
-        </div>
-        <style>
-            @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-        </style>
-
-        <?php if ($error): ?>
-            <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-red-500">Gagal</h3>
-                </div>
-                <div class="text-sm text-red-400"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($result && !$error): ?>
-            <?php
-            $lines = '';
-            if (!empty($result['successes']) && is_array($result['successes'])) {
-                foreach ($result['successes'] as $row) {
-                    $email = $row['email'] ?? '-';
-                    $pwd = $row['password'] ?? ($_POST['password'] ?? '');
-                    $cty = $row['country'] ?? ($result['selectedCountry'] ?? '');
-                    $lines .= $email.'|'.$pwd.'|'.$cty."\n";
-                }
-            }
-            ?>
-            <div class="result-card mt-6">
+        <?php if (!empty($resultMessage) || !empty($resultsBatch)): ?>
+            <div class="result-card mt-6 <?php echo (!empty($resultMessage) && strpos($resultMessage, 'Selesai:') !== 0) ? 'bg-red-500/10 border-red-500/20' : ''; ?>">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="font-bold">Hasil</div>
-                    <button id="copyBtn" type="button" class="btn btn-secondary">Copy</button>
+                    <div class="font-bold">Result</div>
                 </div>
-                <pre id="resultText" class="bg-black/30 p-3 rounded border border-white/10 text-sm overflow-x-auto"><?php echo htmlspecialchars($lines, ENT_QUOTES, 'UTF-8'); ?></pre>
+                <?php if (!empty($resultMessage)): ?>
+                    <div class="text-sm mb-2"><?php echo htmlspecialchars($resultMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($resultsBatch)): ?>
+                    <ul class="text-sm">
+                        <?php foreach ($resultsBatch as $r): ?>
+                            <?php if ($r['ok']): ?>
+                                <li class="mono">Registered: <?php echo htmlspecialchars($r['email'] . ' | ' . $r['password']); ?></li>
+                            <?php else: ?>
+                                <li class="mono text-red-400">Failed: <?php echo htmlspecialchars($r['error']); ?></li>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
@@ -261,60 +220,4 @@ include '../includes/header.php';
 
 <?php include '../includes/footer.php'; ?>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const modal = document.getElementById('processingModal');
-    let timer = null;
 
-    if (form && modal) {
-        form.addEventListener('submit', function() {
-            // Tampilkan modal saat submit
-            modal.style.display = 'flex';
-            const start = Date.now();
-            const timerEl = document.getElementById('elapsedSeconds');
-            timer = setInterval(function() {
-                const elapsed = (Date.now() - start) / 1000;
-                if (timerEl) timerEl.textContent = elapsed.toFixed(1);
-            }, 100);
-        });
-    }
-
-    // Jika hasil sudah ada di halaman (server render setelah PRG), sembunyikan modal
-    const hasResult = document.querySelector('.result-card');
-    if (hasResult && modal) {
-        modal.style.display = 'none';
-    }
-
-    // Cleanup timer saat navigasi
-    window.addEventListener('beforeunload', function() {
-        if (timer) clearInterval(timer);
-    });
-});
-</script>
-
-<script>
-// Copy button handler
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.id === 'copyBtn') {
-        const pre = document.getElementById('resultText');
-        if (pre) {
-            const text = pre.innerText || pre.textContent || '';
-            navigator.clipboard.writeText(text).then(function() {
-                e.target.textContent = 'Copied';
-                setTimeout(() => { e.target.textContent = 'Copy'; }, 1200);
-            }).catch(function() {
-                // Fallback
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                e.target.textContent = 'Copied';
-                setTimeout(() => { e.target.textContent = 'Copy'; }, 1200);
-            });
-        }
-    }
-});
-</script>

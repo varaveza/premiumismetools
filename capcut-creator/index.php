@@ -141,7 +141,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($err) {
             $error = $err;
         } else {
-            $result = $resp;
+            // Jika backend mengirim error di payload (mis. limit/validasi), tampilkan sebagai info sekali
+            if (isset($resp['error'])) {
+                $msg = (string)$resp['error'];
+                if (stripos($msg, 'limit') !== false) {
+                    $error = 'Limit backend tercapai. Coba lagi besok.';
+                } else {
+                    $error = $msg;
+                }
+            } else {
+                $result = $resp;
+            }
             // Catat berdasarkan jumlah akun sukses (successCount)
             $successCount = (int)($result['successCount'] ?? 0);
             if ($successCount > 0) {
