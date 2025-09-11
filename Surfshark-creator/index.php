@@ -7,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Configure backend base URL
-$BACKEND_BASE = getenv('BACKEND_BASE') ?: 'http://127.0.0.1:8080';
+$BACKEND_BASE = getenv('BACKEND_BASE') ?: 'http://127.0.0.1:7070';
 
 function http_get_json($url) {
     $ch = curl_init();
