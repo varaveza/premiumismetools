@@ -137,7 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $result = $json ?: ['success' => false, 'error' => 'API call failed'];
                     // Add debug info
                     $result['debug'] = [
-                        'api_url' => $api_url,
                         'http_code' => $http_code,
                         'response' => $api_response,
                         'json_error' => json_last_error_msg(),
