@@ -12,9 +12,9 @@ function load_config(): array {
         'SPOTIFY_DOMAIN' => 'motionisme.com',  // Hardcoded default
         'SPOTIFY_PASSWORD' => 'Premium@123',   // Hardcoded default
         // Allow disabling PHP-side rate limit (useful for localhost/dev)
-        'DISABLE_RATE_LIMIT' => false,  // Rate limit enabled - 10 users per IP per day
+        'DISABLE_RATE_LIMIT' => false,  // Rate limit enabled - 2 users per IP per day
         // Allow disabling daily limit (useful for localhost/dev)
-        'DISABLE_DAILY_LIMIT' => false,  // Daily limit enabled - 100 accounts per day
+        'DISABLE_DAILY_LIMIT' => false,  // Daily limit enabled - 50 accounts per day
         // Control whether to show verbose debug info in UI (default: hidden for security)
         'SHOW_DEBUG' => false,  // Hardcoded to false for production security
         // API configuration for index.php

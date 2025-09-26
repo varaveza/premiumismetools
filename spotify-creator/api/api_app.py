@@ -14,6 +14,9 @@ APP = Flask(__name__)
 USAGE_DIR = os.path.join(os.path.dirname(__file__), "logs")
 USAGE_FILE = os.path.join(USAGE_DIR, "usage.json")
 
+# Toggle for rate limit enforcement (0: disabled, 1: enabled)
+RATE_LIMIT_ENABLED = os.getenv("API_RATE_LIMIT_ENABLED", "0") in ("1", "true", "True")
+
 def _today_str() -> str:
     return datetime.utcnow().strftime("%Y-%m-%d")
 
@@ -40,8 +43,8 @@ def _save_usage(data):
         json.dump(data, f)
     os.replace(tmp_file, USAGE_FILE)
 
-MAX_PER_IP_PER_DAY = 10
-MAX_GLOBAL_PER_DAY = 150
+MAX_PER_IP_PER_DAY = 2
+MAX_GLOBAL_PER_DAY = 50
 
 def get_client_ip():
     """Get client IP address from various headers"""
@@ -112,8 +115,8 @@ def before_request():
             "ip": client_ip
         }), 403
 
-    # Enforce daily rate limits only for account creation endpoint
-    if request.path == "/api/create" and request.method == "POST":
+    # Enforce daily rate limits only for account creation endpoint (optional)
+    if RATE_LIMIT_ENABLED and request.path == "/api/create" and request.method == "POST":
         usage = _load_usage()
         # Global cap
         if usage.get("global_count", 0) >= MAX_GLOBAL_PER_DAY:

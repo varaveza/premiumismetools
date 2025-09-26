@@ -39,26 +39,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $uaHash = hash('sha256', $ua);
     $today = date('Y-m-d');
     
-    // Check rate limiting - 10 users per IP per day
+    // Check rate limiting - 2 users per IP per day
     if (!$cfg['DISABLE_RATE_LIMIT']) {
-        // Check if this IP has already submitted 10 times today
+        // Check if this IP has already submitted 2 times today
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM ip_submissions WHERE ip = ? AND date(submitted_at) = ?");
         $stmt->execute([$ip, $today]);
         $ip_count = $stmt->fetchColumn() ?: 0;
         
-        if ($ip_count >= 10) {
-            $result = ['success' => false, 'error' => 'Anda sudah membuat 10 akun hari ini. Coba lagi besok.'];
+        if ($ip_count >= 2) {
+            $result = ['success' => false, 'error' => 'Batas per IP tercapai (2 akun/hari). Coba lagi besok.'];
         }
     }
     
-    // Check daily limit - max 100 accounts per day
+    // Check daily limit - max 50 accounts per day
     if (!$result && !$cfg['DISABLE_DAILY_LIMIT']) {
         $stmt = $pdo->prepare("SELECT count FROM daily_submissions WHERE date = ?");
         $stmt->execute([$today]);
         $daily_count = $stmt->fetchColumn() ?: 0;
         
-        if ($daily_count >= 100) {
-            $result = ['success' => false, 'error' => 'Kuota harian sudah habis (100 akun/hari). Coba lagi besok.'];
+        if ($daily_count >= 50) {
+            $result = ['success' => false, 'error' => 'Kuota harian sudah habis (50 akun/hari). Coba lagi besok.'];
         }
     }
     

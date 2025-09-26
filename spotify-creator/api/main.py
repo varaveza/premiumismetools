@@ -158,7 +158,7 @@ class Spotify:
     def get_data(self, max_retry=5):
         for try_num in range(1, max_retry + 1):
             try:
-                url = "https://www.spotify.com/uk/signup"
+                url = "https://www.spotify.com/cz/signup"
                 response = self.session.get(url)
                 
                 if response.status_code != 200:
@@ -796,7 +796,7 @@ class StudentVerifier:
                         continue
                     
                     self.log("Step 2: Confirming verification")
-                    confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
+                    confirm_url = f"https://www.spotify.com/cz/student/confirmed/sheerid-program/?verificationId={verification_id}"
                     response = session.get(confirm_url, allow_redirects=True)
                     
                     self.log(f"Step 2: {response.status_code}")
@@ -806,7 +806,7 @@ class StudentVerifier:
                         continue
                     
                     self.log("Step 3: Checking verification status")
-                    verify_url = "https://www.spotify.com/uk/student/verification/"
+                    verify_url = "https://www.spotify.com/cz/student/verification/"
                     response = session.get(verify_url, allow_redirects=True)
                     
                     self.log(f"Step 3: {response.status_code}")
@@ -883,7 +883,7 @@ class StudentVerifier:
                         continue
 
                     self.log("Step 2: Confirming verification")
-                    confirm_url = f"https://www.spotify.com/uk/student/confirmed/sheerid-program/?verificationId={verification_id}"
+                    confirm_url = f"https://www.spotify.com/cz/student/confirmed/sheerid-program/?verificationId={verification_id}"
                     response = session.get(confirm_url, allow_redirects=True)
                     self.log(f"Step 2: {response.status_code}")
                     if response.status_code not in [200, 301, 302, 307]:
@@ -892,7 +892,7 @@ class StudentVerifier:
                         continue
 
                     self.log("Step 3: Checking verification status")
-                    verify_url = "https://www.spotify.com/uk/student/verification/"
+                    verify_url = "https://www.spotify.com/cz/student/verification/"
                     response = session.get(verify_url, allow_redirects=True)
                     self.log(f"Step 3: {response.status_code}")
                     if response.status_code != 200:
