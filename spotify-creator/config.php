@@ -9,7 +9,7 @@ function load_config(): array {
     // Hardcoded config values instead of relying on .env file
     $config = [
         'SQLITE_PATH' => __DIR__ . '/../spo_creator.db',
-        'SPOTIFY_DOMAIN' => 'motionisme.com',  // Hardcoded default
+        'SPOTIFY_DOMAIN' => 'anjay.id',  // Hardcoded default
         'SPOTIFY_PASSWORD' => 'Premium@123',   // Hardcoded default
         // Allow disabling PHP-side rate limit (useful for localhost/dev)
         'DISABLE_RATE_LIMIT' => false,  // Rate limit enabled - 2 users per IP per day
