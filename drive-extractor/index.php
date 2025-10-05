@@ -46,8 +46,19 @@ include '../includes/header.php';
         const urlsTextarea = document.getElementById('urls');
 
         // --- PERBAIKAN ---
-        // Menyesuaikan port agar sama dengan server backend Node.js (api.js).
-        const API_BASE_URL = 'http://localhost:1203';
+        // Konfigurasi API URL untuk development dan production
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname.includes('localhost');
+        
+        const API_BASE_URL = isLocalhost 
+            ? 'http://localhost:1203'  // Development - direct to Node.js
+            : window.location.origin;  // Production - use PHP proxy
+        
+        // Debug info
+        console.log('Hostname:', window.location.hostname);
+        console.log('API Base URL:', API_BASE_URL);
+        console.log('Is Localhost:', isLocalhost);
 
         function extractFileId(url) {
             if (!url) return null;
@@ -73,10 +84,18 @@ include '../includes/header.php';
             const timeoutId = setTimeout(() => controller.abort(), 20000);
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/get-drive-content?fileId=${fileId}`, {
+                // Use different endpoints for development vs production
+                const endpoint = isLocalhost 
+                    ? `${API_BASE_URL}/api/get-drive-content?fileId=${fileId}`
+                    : `${API_BASE_URL}/tools/drive-extractor/api-proxy.php?fileId=${fileId}`;
+                
+                console.log('Fetching from:', endpoint);
+                
+                const response = await fetch(endpoint, {
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
+                
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);

@@ -37,28 +37,80 @@ if (isMainThread) {
   const app = express();
   const PORT = process.env.PORT || 1203;
 
-  // Middleware untuk membatasi akses hanya dari localhost
+  // Middleware untuk membatasi akses hanya dari localhost dan trusted sources
   app.use((req, res, next) => {
     const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-    const isLocalhost = clientIP === '127.0.0.1' || 
-                       clientIP === '::1' || 
-                       clientIP === '::ffff:127.0.0.1' ||
-                       clientIP.startsWith('127.') ||
-                       clientIP.startsWith('192.168.') ||
-                       clientIP.startsWith('10.') ||
-                       clientIP === 'localhost';
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const realIP = req.headers['x-real-ip'];
     
-    if (!isLocalhost) {
+    // Get the actual client IP considering proxies
+    let actualIP = clientIP;
+    if (forwardedFor) {
+      actualIP = forwardedFor.split(',')[0].trim();
+    } else if (realIP) {
+      actualIP = realIP;
+    }
+    
+    const isLocalhost = actualIP === '127.0.0.1' || 
+                       actualIP === '::1' || 
+                       actualIP === '::ffff:127.0.0.1' ||
+                       actualIP.startsWith('127.') ||
+                       actualIP.startsWith('192.168.') ||
+                       actualIP.startsWith('10.') ||
+                       actualIP === 'localhost' ||
+                       actualIP === '::ffff:192.168.1.1' ||
+                       actualIP.includes('localhost');
+    
+    // Allow access from localhost and internal networks
+    if (!isLocalhost && !actualIP.startsWith('192.168.') && !actualIP.startsWith('10.')) {
+      console.log(`Access denied for IP: ${actualIP} (original: ${clientIP})`);
       return res.status(403).json({ 
-        error: 'Access denied. This API is only accessible from localhost.' 
+        error: 'Access denied. This API is only accessible from localhost and internal networks.',
+        clientIP: actualIP
       });
     }
     
     next();
   });
 
-  // Gunakan middleware CORS untuk mengizinkan permintaan dari domain lain
-  app.use(cors());
+  // Konfigurasi CORS yang lebih spesifik
+  const corsOptions = {
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost and internal networks
+      const allowedOrigins = [
+        'http://localhost',
+        'http://127.0.0.1',
+        'http://localhost:80',
+        'http://127.0.0.1:80',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+      ];
+      
+      // Check if origin is allowed
+      const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed)) ||
+                       origin.includes('localhost') ||
+                       origin.includes('127.0.0.1') ||
+                       origin.startsWith('http://192.168.') ||
+                       origin.startsWith('http://10.');
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  };
+  
+  app.use(cors(corsOptions));
   app.use(express.json());
 
   // Fungsi untuk menjalankan fetcher di dalam worker
@@ -102,8 +154,12 @@ if (isMainThread) {
   // --- API Endpoint ---
   app.get('/api/get-drive-content', async (req, res) => {
     const { fileId } = req.query;
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    
+    console.log(`[${new Date().toISOString()}] Request from ${clientIP} for fileId: ${fileId}`);
 
     if (!fileId) {
+      console.log('Error: fileId parameter missing');
       return res.status(400).json({ 
         error: 'Parameter "fileId" is required.' 
       });
