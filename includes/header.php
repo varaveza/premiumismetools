@@ -77,7 +77,7 @@ set_security_headers();
                 <div class="nav-viewport" id="navViewport">
                     <nav class="desktop-nav nav-track" id="navTrack">
                         <a href="<?php echo $base_prefix; ?>capcut-creator/" class="nav-link <?php echo $current_page === 'capcut' ? 'active' : ''; ?>">CapCut Creator</a>
-                        <a href="<?php echo $base_prefix; ?>drive-extractor/" class="nav-link <?php echo $current_page === 'drive' ? 'active' : ''; ?>">Drive Extractor</a>
+                        <a href="<?php echo $base_prefix; ?>drive-extractor/" class="nav-link <?php echo $current_page === 'drive' ? 'active' : ''; ?>">GDrive Downloader</a>
                         <a href="<?php echo $base_prefix; ?>generator-email/" class="nav-link <?php echo $current_page === 'generator' ? 'active' : ''; ?>">Generator Email</a>
                         <a href="<?php echo $base_prefix; ?>gsuite/" class="nav-link <?php echo $current_page === 'gsuite' ? 'active' : ''; ?>">GSuite Creator</a>
                         <a href="<?php echo $base_prefix; ?>refund-calculator/" class="nav-link <?php echo $current_page === 'refund' ? 'active' : ''; ?>">Refund Calculator</a>
