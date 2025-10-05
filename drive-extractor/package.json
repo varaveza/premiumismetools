@@ -1,0 +1,18 @@
+{
+  "name": "drive-extractor-api",
+  "version": "1.0.0",
+  "description": "Backend API for Google Drive content extraction",
+  "main": "api.js",
+  "scripts": {
+    "start": "node api.js",
+    "dev": "node api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["google-drive", "extractor", "api"],
+  "author": "Premiumisme Tools",
+  "license": "MIT"
+}

@@ -173,7 +173,7 @@ function set_security_headers() {
         . "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
         . "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         . "img-src 'self' data: https:; "
-        . "connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://shortisme.com; "
+        . "connect-src 'self' http://localhost:1203 https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://shortisme.com; "
         . "worker-src 'self' blob:; "
         . "frame-ancestors 'none'; "
         . "base-uri 'self';");
