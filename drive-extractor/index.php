@@ -111,15 +111,26 @@ include '../includes/header.php';
             const successCount = results.filter(r => r.status === 'success').length;
             const errorCount = results.length - successCount;
             let combinedContent = '';
+            let failedLinks = [];
 
             results.forEach(result => {
                 if (result.status === 'success') {
-                    combinedContent += result.content + '\n\n';
+                    // Remove spaces from content
+                    const cleanContent = result.content.replace(/\s+/g, '');
+                    combinedContent += cleanContent + '\n';
+                } else {
+                    failedLinks.push({
+                        index: result.index,
+                        url: result.url,
+                        message: result.message
+                    });
                 }
             });
 
+            let resultHTML = '';
+
             if (combinedContent.trim()) {
-                resultsContainer.innerHTML = `
+                resultHTML += `
                     <div class="result-card mt-6">
                         <div class="flex items-center justify-between mb-3">
                             <div class="font-bold">Hasil (${successCount} berhasil, ${errorCount} gagal)</div>
@@ -150,6 +161,35 @@ include '../includes/header.php';
                         });
                     });
                 }
+            }
+
+            // Show failed links information
+            if (failedLinks.length > 0) {
+                resultHTML += `
+                    <div class="result-card mt-4 bg-red-500/10 border-red-500/20">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-red-500">Link yang Gagal (${failedLinks.length})</h3>
+                        </div>
+                        <div class="space-y-2">
+                            ${failedLinks.map(link => `
+                                <div class="text-sm text-red-400 p-2 bg-red-500/5 rounded border border-red-500/10">
+                                    <div class="font-medium">Link #${link.index}:</div>
+                                    <div class="text-xs opacity-80 break-all">${escapeHTML(link.url)}</div>
+                                    <div class="text-xs mt-1">Error: ${escapeHTML(link.message)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (resultHTML) {
+                resultsContainer.innerHTML = resultHTML;
             } else {
                 resultsContainer.innerHTML = `
                     <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
