@@ -115,8 +115,8 @@ include '../includes/header.php';
 
             results.forEach(result => {
                 if (result.status === 'success') {
-                    // Remove spaces from content
-                    const cleanContent = result.content.replace(/\s+/g, '');
+                    // Clean content but preserve line structure
+                    const cleanContent = result.content.trim();
                     combinedContent += cleanContent + '\n';
                 } else {
                     failedLinks.push({
