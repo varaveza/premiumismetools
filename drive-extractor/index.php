@@ -139,28 +139,6 @@ include '../includes/header.php';
                         <pre id="result-text" class="bg-black/30 p-3 rounded border border-white/10 text-sm overflow-x-auto whitespace-pre-wrap">${escapeHTML(combinedContent.trim())}</pre>
                     </div>
                 `;
-
-                // Event listener untuk tombol copy
-                const copyBtn = document.getElementById('copy-btn');
-                if (copyBtn) {
-                    copyBtn.addEventListener('click', () => {
-                        const contentToCopy = document.getElementById('result-text').textContent;
-                        navigator.clipboard.writeText(contentToCopy).then(() => {
-                            copyBtn.textContent = 'Copied!';
-                            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-                        }).catch(() => {
-                            // Fallback
-                            const textArea = document.createElement('textarea');
-                            textArea.value = contentToCopy;
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(textArea);
-                            copyBtn.textContent = 'Copied!';
-                            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-                        });
-                    });
-                }
             }
 
             // Show failed links information
@@ -190,6 +168,28 @@ include '../includes/header.php';
 
             if (resultHTML) {
                 resultsContainer.innerHTML = resultHTML;
+                
+                // Add event listener untuk tombol copy setelah HTML dimasukkan ke DOM
+                const copyBtn = document.getElementById('copy-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', () => {
+                        const contentToCopy = document.getElementById('result-text').textContent;
+                        navigator.clipboard.writeText(contentToCopy).then(() => {
+                            copyBtn.textContent = 'Copied!';
+                            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+                        }).catch(() => {
+                            // Fallback
+                            const textArea = document.createElement('textarea');
+                            textArea.value = contentToCopy;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            copyBtn.textContent = 'Copied!';
+                            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+                        });
+                    });
+                }
             } else {
                 resultsContainer.innerHTML = `
                     <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
