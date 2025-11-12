@@ -45,7 +45,9 @@ curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json',
-    'Content-Length: ' . strlen(json_encode($data))
+    'Content-Length: ' . strlen(json_encode($data)),
+    'X-Forwarded-For: ' . ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+    'X-Real-IP: ' . ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1')
 ]);
 curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 minutes timeout
 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);

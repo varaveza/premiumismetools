@@ -451,7 +451,7 @@ include '../includes/header.php';
                             <h3 class="text-lg font-semibold text-red-500">Connection Error</h3>
                         </div>
                         <div class="text-sm text-red-400">
-                            Gagal terhubung ke API server. Pastikan server berjalan di ${API_BASE_URL}/api/join
+                            Gagal terhubung ke API server. Pastikan server berjalan di ${API_ENDPOINT}
                             <br><br>
                             <strong>Error:</strong> ${escapeHTML(error.message)}
                         </div>
