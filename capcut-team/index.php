@@ -62,10 +62,7 @@ include '../includes/header.php';
 </div>
 
 <script>
-    console.log('Script loaded, waiting for DOM');
-    
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM Content Loaded');
         
         const form = document.getElementById('invite-form');
         const submitBtn = document.getElementById('submit-btn');
@@ -83,14 +80,6 @@ include '../includes/header.php';
             return;
         }
         
-        console.log('All elements found:', {
-            form: !!form,
-            submitBtn: !!submitBtn,
-            submitBtnText: !!submitBtnText,
-            loadingSpinner: !!loadingSpinner,
-            resultsContainer: !!resultsContainer
-        });
-
         // API URL - Development: localhost, Production: gunakan PHP proxy untuk menghindari CORS
         const isLocalhost = window.location.hostname === 'localhost' || 
                            window.location.hostname === '127.0.0.1';
@@ -98,9 +87,6 @@ include '../includes/header.php';
         const API_ENDPOINT = isLocalhost 
             ? 'http://localhost:8001/api/join'  // Development: direct ke Node.js
             : window.location.origin + '/tools/capcut-team/api-proxy.php';  // Production: melalui PHP proxy
-        
-        console.log('API Endpoint:', API_ENDPOINT);
-        console.log('Is Localhost:', isLocalhost);
 
         function parseAccounts(accountsText) {
             const lines = accountsText.split('\n').map(line => line.trim()).filter(Boolean);
@@ -346,15 +332,12 @@ include '../includes/header.php';
             return p.innerHTML;
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('Form submitted!');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
             
             const link = document.getElementById('link').value.trim();
             const accountsText = document.getElementById('accounts').value.trim();
             const workers = parseInt(document.getElementById('workers').value) || 10;
-            
-            console.log('Form data:', { link, accountsCount: accountsText.split('\n').length, workers });
 
             if (!link) {
                 resultsContainer.innerHTML = `
@@ -403,11 +386,6 @@ include '../includes/header.php';
             };
 
             try {
-                console.log('=== STARTING FETCH REQUEST ===');
-                console.log('Sending request to:', API_ENDPOINT);
-                console.log('Payload:', JSON.stringify(payload, null, 2));
-                
-                const fetchStartTime = Date.now();
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     mode: 'cors',
@@ -417,12 +395,6 @@ include '../includes/header.php';
                     },
                     body: JSON.stringify(payload)
                 });
-
-                const fetchTime = Date.now() - fetchStartTime;
-                console.log(`Fetch completed in ${fetchTime}ms`);
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
                 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -431,15 +403,9 @@ include '../includes/header.php';
                 }
 
                 const data = await response.json();
-                console.log('Response data:', data);
-                console.log('=== FETCH SUCCESS ===');
                 renderResults(data);
             } catch (error) {
-                console.error('=== FETCH ERROR ===');
-                console.error('Error name:', error.name);
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-                console.error('Full error:', error);
+                console.error('API Error:', error.message);
                 resultsContainer.innerHTML = `
                     <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
                         <div class="flex items-center gap-3 mb-3">
