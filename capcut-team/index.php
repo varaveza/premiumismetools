@@ -7,7 +7,6 @@ include '../includes/header.php';
 
 <div class="content-wrapper">
     <div class="content-section">
-        <h2>Capcut-Teams Auto-Invite</h2>
 
         <form id="invite-form" class="grid grid-cols-1 gap-4">
             <div>
@@ -34,7 +33,7 @@ include '../includes/header.php';
             </div>
 
             <div>
-                <label for="workers" class="block mb-2 text-sm opacity-80">Workers (Parallel Processing)</label>
+                <label for="workers" class="block mb-2 text-sm opacity-80">Threads</label>
                 <input 
                     type="number" 
                     id="workers"
