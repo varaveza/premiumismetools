@@ -91,15 +91,13 @@ include '../includes/header.php';
             resultsContainer: !!resultsContainer
         });
 
-        // API URL - Development: localhost, Production: api.ngontol.com
+        // API URL - Development: localhost, Production: gunakan PHP proxy untuk menghindari CORS
         const isLocalhost = window.location.hostname === 'localhost' || 
                            window.location.hostname === '127.0.0.1';
         
-        const API_BASE_URL = isLocalhost 
-            ? 'http://localhost:8001'  // Development
-            : 'https://api.ngontol.com';  // Production
-        
-        const API_ENDPOINT = `${API_BASE_URL}/api/join`;
+        const API_ENDPOINT = isLocalhost 
+            ? 'http://localhost:8001/api/join'  // Development: direct ke Node.js
+            : window.location.origin + '/tools/capcut-team/api-proxy.php';  // Production: melalui PHP proxy
         
         console.log('API Endpoint:', API_ENDPOINT);
         console.log('Is Localhost:', isLocalhost);

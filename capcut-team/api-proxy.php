@@ -12,8 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// API endpoint
-$API_URL = 'http://localhost:8001/api/join';
+// API endpoint - Production: api.ngontol.com, Development: localhost
+$isProduction = !empty($_SERVER['HTTP_HOST']) && 
+                $_SERVER['HTTP_HOST'] !== 'localhost' && 
+                strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false;
+
+$API_URL = $isProduction 
+    ? 'https://api.ngontol.com/api/join'  // Production
+    : 'http://localhost:8001/api/join';   // Development
 
 // Get request body
 $input = file_get_contents('php://input');
