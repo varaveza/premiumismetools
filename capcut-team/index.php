@@ -276,7 +276,7 @@ include '../includes/header.php';
                     // Store successEmails di data attribute untuk akses
                     const copySuccessBtn = document.getElementById('copy-success-btn');
                     if (copySuccessBtn) {
-                        const emailsToCopy = [successEmails]; // Copy array
+                        const emailsToCopy = [...successEmails]; // Copy array
                         copySuccessBtn.addEventListener('click', () => {
                             const emailsText = emailsToCopy.join('\n');
                             navigator.clipboard.writeText(emailsText).then(() => {
@@ -398,7 +398,34 @@ include '../includes/header.php';
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Response error:', errorText);
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = { message: errorText };
+                    }
+                    
+                    // Jika ada message dari backend, tampilkan dengan format yang lebih baik
+                    if (errorData.message) {
+                        const escapedMessage = escapeHTML(errorData.message);
+                        const messageHTML = escapedMessage.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline break-all">$1</a>');
+                        
+                        resultsContainer.innerHTML = `
+                            <div class="result-card mt-6 bg-red-500/10 border-red-500/20">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-red-500">Error</h3>
+                                </div>
+                                <div class="text-sm text-red-400 break-words">${messageHTML}</div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
 
