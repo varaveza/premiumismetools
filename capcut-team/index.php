@@ -99,7 +99,7 @@ include '../includes/header.php';
                 const count = lines.length;
                 
                 if (count > 0) {
-                    accountsCountText.textContent = `Paste ${count} line`;
+                    accountsCountText.textContent = `Paste ${count} Accounts`;
                 } else {
                     accountsCountText.textContent = 'Format: email|password (satu per baris)';
                 }
