@@ -29,7 +29,7 @@ include '../includes/header.php';
                     rows="10" 
                     placeholder="email1@example.com|password1&#10;email2@example.com|password2&#10;email3@example.com|password3"
                     required></textarea>
-                <p class="text-xs opacity-60 mt-1">Format: email|password (satu per baris)</p>
+                <p class="text-xs opacity-60 mt-1" id="accounts-count">Format: email|password (satu per baris)</p>
             </div>
 
             <div>
@@ -87,6 +87,30 @@ include '../includes/header.php';
         const API_ENDPOINT = isLocalhost 
             ? 'http://localhost:8001/api/join'  // Development: direct ke Node.js
             : window.location.origin + '/tools/capcut-team/api-proxy.php';  // Production: melalui PHP proxy
+
+        // Update accounts count saat user input/paste
+        const accountsTextarea = document.getElementById('accounts');
+        const accountsCountText = document.getElementById('accounts-count');
+        
+        if (accountsTextarea && accountsCountText) {
+            function updateAccountsCount() {
+                const text = accountsTextarea.value;
+                const lines = text.split('\n').filter(line => line.trim().length > 0);
+                const count = lines.length;
+                
+                if (count > 0) {
+                    accountsCountText.textContent = `Paste ${count} line`;
+                } else {
+                    accountsCountText.textContent = 'Format: email|password (satu per baris)';
+                }
+            }
+            
+            accountsTextarea.addEventListener('input', updateAccountsCount);
+            accountsTextarea.addEventListener('paste', () => {
+                // Delay sedikit untuk memastikan paste sudah selesai
+                setTimeout(updateAccountsCount, 10);
+            });
+        }
 
         function parseAccounts(accountsText) {
             const lines = accountsText.split('\n').map(line => line.trim()).filter(Boolean);
