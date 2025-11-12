@@ -1,1 +1,0 @@
-sp_m=cz; sp_t=1ae106d2-2aac-46c2-991a-3b837c3c4743; sp_new=1; sp_landing=https%3A%2F%2Fwww.spotify.com%2Fcz%2Fsignup; __Host-sp_csrf_sid=35cb034829be15c0687ce3ddc0d5697e6b512b8f660f2994d9cd317ce0204bb4; 
